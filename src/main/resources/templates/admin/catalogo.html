@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Catálogo de aeropuertos y aeronaves</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
+      .container { max-width: 1200px; margin: 0 auto; }
+      .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+      .btn { display: inline-block; padding: 0.75rem 1rem; background: #d32f2f; color: white; text-decoration: none; border-radius: 8px; }
+      .btn.secondary { background: #5f6c7b; }
+      a.btn { text-decoration: none; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; }
+      .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+      table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+      th, td { border-bottom: 1px solid #ddd; padding: 0.6rem; text-align: left; }
+      form { display: grid; gap: 0.75rem; }
+      .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+      input, button, select { padding: 0.75rem; border-radius: 8px; border: 1px solid #cfd8dc; }
+      button { background: #2d6cdf; color: white; border: none; cursor: pointer; }
+      .danger { background: #b71c1c; }
+      .msg { padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 1rem; }
+      .success { background: #e8f5e9; color: #1b5e20; }
+      .error { background: #ffebee; color: #b71c1c; }
+      .inline-form { display: inline; }
+      .filter-section { margin-bottom: 1.5rem; display: grid; gap: 0.75rem; }
+      .pagination { display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: center; align-items: center; flex-wrap: wrap; }
+      .pagination a, .pagination span { padding: 0.5rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; text-decoration: none; color: #2d6cdf; }
+      .pagination a:hover { background: #f0f0f0; }
+      .pagination .active { background: #2d6cdf; color: white; border-color: #2d6cdf; }
+      .pagination .disabled { color: #999; cursor: not-allowed; }
+      .search-row { display: flex; gap: 0.5rem; }
+      .search-row input { flex: 1; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        <a class="btn secondary" href="/">Inicio</a>
+        <a class="btn secondary" href="/admin">Administración</a>
+        <form method="post" th:action="@{/logout}" style="display: inline;">
+          <button type="submit" class="btn danger" style="padding: 0.75rem 1rem; border: none; cursor: pointer;">Logout</button>
+        </form>
+      </div>
+
+      <div th:if="${success}" class="msg success" th:text="${success}"></div>
+      <div th:if="${error}" class="msg error" th:text="${error}"></div>
+
+      <h1>Catálogo de aeropuertos y aeronaves</h1>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Aeropuertos</h2>
+
+          <div class="filter-section">
+            <form method="get" th:action="@{/admin/catalogo}" class="search-row">
+              <input type="text" name="filtroAeropuerto" th:value="${filtroAeropuerto}" placeholder="Buscar por nombre o ciudad" />
+              <button type="submit">Buscar</button>
+              <a th:href="@{/admin/catalogo}" class="btn secondary" style="padding: 0.75rem 1rem;">Limpiar</a>
+            </form>
+          </div>
+
+          <form th:action="@{/admin/aeropuertos}" th:object="${nuevoAeropuerto}" method="post">
+            <input type="hidden" th:field="*{id}" />
+            <div class="row">
+              <label>
+                Código IATA
+                <input type="text" th:field="*{codigoIata}" maxlength="10" required />
+              </label>
+              <label>
+                Nombre
+                <input type="text" th:field="*{nombre}" maxlength="150" required />
+              </label>
+            </div>
+            <div class="row">
+              <label>
+                Ciudad
+                <input type="text" th:field="*{ciudad}" maxlength="100" required />
+              </label>
+              <label>
+                País
+                <input type="text" th:field="*{pais}" maxlength="100" required />
+              </label>
+            </div>
+            <button type="submit" th:text="${nuevoAeropuerto.id != null} ? 'Actualizar aeropuerto' : 'Guardar aeropuerto'">Guardar aeropuerto</button>
+          </form>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Ciudad</th>
+                <th>País</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="aeropuerto : ${aeropuertos}">
+                <td th:text="${aeropuerto.codigoIata}">EZE</td>
+                <td th:text="${aeropuerto.nombre}">Ezeiza</td>
+                <td th:text="${aeropuerto.ciudad}">Buenos Aires</td>
+                <td th:text="${aeropuerto.pais}">Argentina</td>
+                <td>
+                  <a class="btn secondary" th:href="@{/admin/aeropuertos/{id}/editar(id=${aeropuerto.id})}">Editar</a>
+                  <form class="inline-form" th:action="@{/admin/aeropuertos/{id}/eliminar(id=${aeropuerto.id})}" method="post">
+                    <button class="danger" type="submit" onclick="return confirm('¿Desea eliminar este aeropuerto?');">Eliminar</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination" th:if="${totalPagesAero > 1}">
+            <a th:if="${pageAero > 0}" th:href="@{/admin/catalogo(pageAero=${pageAero - 1}, filtroAeropuerto=${filtroAeropuerto})}">← Anterior</a>
+            <span th:if="${pageAero == 0}" class="disabled">← Anterior</span>
+            <span th:each="i : ${#numbers.sequence(0, totalPagesAero - 1)}">
+              <span th:if="${i == pageAero}" class="active" th:text="${i + 1}"></span>
+              <a th:if="${i != pageAero}" th:href="@{/admin/catalogo(pageAero=${i}, filtroAeropuerto=${filtroAeropuerto})}" th:text="${i + 1}"></a>
+            </span>
+            <a th:if="${pageAero < totalPagesAero - 1}" th:href="@{/admin/catalogo(pageAero=${pageAero + 1}, filtroAeropuerto=${filtroAeropuerto})}">Siguiente →</a>
+            <span th:if="${pageAero == totalPagesAero - 1}" class="disabled">Siguiente →</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Aeronaves</h2>
+
+          <div class="filter-section">
+            <form method="get" th:action="@{/admin/catalogo}" class="search-row">
+              <input type="text" name="filtroAeronave" th:value="${filtroAeronave}" placeholder="Buscar por modelo o fabricante" />
+              <button type="submit">Buscar</button>
+              <a th:href="@{/admin/catalogo}" class="btn secondary" style="padding: 0.75rem 1rem;">Limpiar</a>
+            </form>
+          </div>
+
+          <form th:action="@{/admin/aeronaves}" th:object="${nuevoAeronave}" method="post">
+            <input type="hidden" th:field="*{id}" />
+            <div class="row">
+              <label>
+                Modelo
+                <input type="text" th:field="*{modelo}" maxlength="80" required />
+              </label>
+              <label>
+                Fabricante
+                <input type="text" th:field="*{fabricante}" maxlength="80" required />
+              </label>
+            </div>
+            <div class="row">
+              <label>
+                Código
+                <input type="text" th:field="*{codigo}" maxlength="30" required />
+              </label>
+            </div>
+            <div class="row">
+              <label>
+                Economy
+                <input type="number" min="0" th:field="*{economySeats}" required />
+              </label>
+              <label>
+                Primera Clase
+                <input type="number" min="0" th:field="*{primeraClaseSeats}" required />
+              </label>
+            </div>
+            <button type="submit" th:text="${nuevoAeronave.id != null} ? 'Actualizar aeronave' : 'Guardar aeronave'">Guardar aeronave</button>
+          </form>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Modelo</th>
+                <th>Código</th>
+                <th>Economy</th>
+                <th>Primera</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="aeronave : ${aeronaves}">
+                <td th:text="${aeronave.modelo}">Boeing 737</td>
+                <td th:text="${aeronave.codigo}">B737</td>
+                <td th:text="${aeronave.economySeats}">180</td>
+                <td th:text="${aeronave.primeraClaseSeats}">20</td>
+                <td>
+                  <a class="btn secondary" th:href="@{/admin/aeronaves/{id}/editar(id=${aeronave.id})}">Editar</a>
+                  <form class="inline-form" th:action="@{/admin/aeronaves/{id}/eliminar(id=${aeronave.id})}" method="post">
+                    <button class="danger" type="submit" onclick="return confirm('¿Desea eliminar esta aeronave?');">Eliminar</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination" th:if="${totalPagesAeronave > 1}">
+            <a th:if="${pageAeronave > 0}" th:href="@{/admin/catalogo(pageAeronave=${pageAeronave - 1}, filtroAeronave=${filtroAeronave})}">← Anterior</a>
+            <span th:if="${pageAeronave == 0}" class="disabled">← Anterior</span>
+            <span th:each="i : ${#numbers.sequence(0, totalPagesAeronave - 1)}">
+              <span th:if="${i == pageAeronave}" class="active" th:text="${i + 1}"></span>
+              <a th:if="${i != pageAeronave}" th:href="@{/admin/catalogo(pageAeronave=${i}, filtroAeronave=${filtroAeronave})}" th:text="${i + 1}"></a>
+            </span>
+            <a th:if="${pageAeronave < totalPagesAeronave - 1}" th:href="@{/admin/catalogo(pageAeronave=${pageAeronave + 1}, filtroAeronave=${filtroAeronave})}">Siguiente →</a>
+            <span th:if="${pageAeronave == totalPagesAeronave - 1}" class="disabled">Siguiente →</span>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

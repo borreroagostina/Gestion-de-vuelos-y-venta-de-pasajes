@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${title}">Gestión de vuelos</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
+      .card { max-width: 700px; margin: 0 auto; padding: 2rem; border: 1px solid #ddd; border-radius: 12px; background: white; }
+      ul { list-style: none; padding: 0; }
+      li { margin: 0.75rem 0; }
+      a { display: inline-block; padding: 0.7rem 1rem; text-decoration: none; color: white; background: #0d6efd; border-radius: 8px; }
+      a.secondary { background: #6c757d; }
+      a.admin { background: #dc3545; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1 th:text="${title}">Gestión de vuelos</h1>
+      <p th:text="${message}">Sistema inicializado</p>
+      <ul>
+        <li><a href="/pasajero">Perfil pasajero</a></li>
+        <li><a href="/empleado" class="secondary">Perfil empleado de mostrador</a></li>
+        <li><a href="/admin" class="admin">Perfil administrador</a></li>
+      </ul>
+    </div>
+  </body>
+</html>

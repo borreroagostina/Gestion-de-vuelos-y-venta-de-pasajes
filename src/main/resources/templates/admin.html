@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${title}">Panel de administracion</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f8f1f5; }
+      .container { max-width: 900px; margin: 0 auto; }
+      .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+      .btn { display: inline-block; padding: 0.7rem 1rem; background: #dc3545; color: white; text-decoration: none; border-radius: 8px; }
+      .btn.secondary { background: #6c757d; }
+      ul { line-height: 1.8; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        <a class="btn secondary" href="/">Inicio</a>
+        <a class="btn" href="/pasajero">Pasajero</a>
+        <a class="btn secondary" href="/empleado">Mostrador</a>
+      </div>
+
+      <div class="card">
+        <h1 th:text="${title}">Panel de administracion</h1>
+        <p th:text="${subtitle}">Gestion de vuelos, capacidad y reportes</p>
+      </div>
+
+      <div class="card">
+        <h2>Funcionalidades principales</h2>
+        <ul>
+          <li><a href="/admin/catalogo">Catálogo de aeropuertos y aeronaves</a></li>
+          <li>Crear, modificar y cancelar vuelos.</li>
+          <li>Definir rutas, horarios, periodo de venta y capacidad.</li>
+          <li>Configurar precios por clase.</li>
+          <li>Consultar ocupacion por vuelo, clase y fecha.</li>
+          <li>Generar reportes operativos y de ventas.</li>
+          <li>Gestionar usuarios del sistema y alertas.</li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${title}">Panel del empleado</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f5ef; }
+      .container { max-width: 900px; margin: 0 auto; }
+      .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+      .btn { display: inline-block; padding: 0.7rem 1rem; background: #198754; color: white; text-decoration: none; border-radius: 8px; }
+      .btn.secondary { background: #6c757d; }
+      ul { line-height: 1.8; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="nav">
+        <a class="btn secondary" href="/">Inicio</a>
+        <a class="btn" href="/pasajero">Pasajero</a>
+        <a class="btn secondary" href="/admin">Admin</a>
+      </div>
+
+      <div class="card">
+        <h1 th:text="${title}">Panel del empleado</h1>
+        <p th:text="${subtitle}">Atencion, reservas y ventas de pasajes</p>
+      </div>
+
+      <div class="card">
+        <h2>Funcionalidades principales</h2>
+        <ul>
+          <li>Registrar ventas y emitir comprobantes.</li>
+          <li>Confirmar reservas de pasajeros.</li>
+          <li>Revisar disponibilidad de asientos por vuelo.</li>
+          <li>Asistir con pagos y dudas operativas.</li>
+          <li>Consultar vuelos activos por horario y ruta.</li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

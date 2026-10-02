@@ -1,0 +1,38 @@
+CREATE TABLE IF NOT EXISTS aerolineas (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    codigo VARCHAR(10) NOT NULL UNIQUE,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS vuelos (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    codigo VARCHAR(20) NOT NULL UNIQUE,
+    origen VARCHAR(100) NOT NULL,
+    destino VARCHAR(100) NOT NULL,
+    fecha_salida DATETIME NOT NULL,
+    fecha_llegada DATETIME NOT NULL,
+    precio DECIMAL(10,2) NOT NULL,
+    estado VARCHAR(50) NOT NULL DEFAULT 'PROGRAMADO',
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS pasajeros (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    documento VARCHAR(20) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS ventas (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    vuelo_id BIGINT NOT NULL,
+    pasajero_id BIGINT NOT NULL,
+    fecha_venta DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    total DECIMAL(10,2) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_venta_vuelo FOREIGN KEY (vuelo_id) REFERENCES vuelos(id),
+    CONSTRAINT fk_venta_pasajero FOREIGN KEY (pasajero_id) REFERENCES pasajeros(id)
+);

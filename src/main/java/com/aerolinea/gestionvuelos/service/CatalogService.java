@@ -5,6 +5,7 @@ import com.aerolinea.gestionvuelos.model.Aeropuerto;
 import com.aerolinea.gestionvuelos.repository.AeronaveRepository;
 import com.aerolinea.gestionvuelos.repository.AeropuertoRepository;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +33,7 @@ public class CatalogService {
   }
 
   public Page<Aeropuerto> listarAeropuertosPaginado(int page, int size, String filtro) {
-    Pageable pageable = PageRequest.of(page, size);
+    final Pageable pageable = PageRequest.of(page, size);
     if (filtro == null || filtro.isBlank()) {
       return aeropuertoRepository.findAllByOrderByNombreAsc(pageable);
     }
@@ -44,7 +45,7 @@ public class CatalogService {
   }
 
   public Page<Aeronave> listarAeronavesPaginado(int page, int size, String filtro) {
-    Pageable pageable = PageRequest.of(page, size);
+    final Pageable pageable = PageRequest.of(page, size);
     if (filtro == null || filtro.isBlank()) {
       return aeronaveRepository.findAllByOrderByModeloAsc(pageable);
     }
@@ -57,6 +58,10 @@ public class CatalogService {
 
   public Aeropuerto guardarAeropuerto(Aeropuerto aeropuerto) {
     validarAeropuerto(aeropuerto);
+    aeropuerto.setCodigoIata(aeropuerto.getCodigoIata().trim().toUpperCase(Locale.ROOT));
+    if (aeropuertoRepository.existsByCodigoIataIgnoreCase(aeropuerto.getCodigoIata())) {
+      throw new IllegalArgumentException("Ya existe un aeropuerto con ese código IATA");
+    }
     return aeropuertoRepository.save(aeropuerto);
   }
 
@@ -64,9 +69,16 @@ public class CatalogService {
     if (aeropuerto == null || aeropuerto.getId() == null) {
       throw new IllegalArgumentException("Debe indicar el aeropuerto a modificar");
     }
-    Aeropuerto existente = aeropuertoRepository.findById(aeropuerto.getId())
-        .orElseThrow(() -> new IllegalArgumentException("No existe el aeropuerto indicado"));
+    final Aeropuerto existente =
+        aeropuertoRepository
+            .findById(aeropuerto.getId())
+            .orElseThrow(() -> new IllegalArgumentException("No existe el aeropuerto indicado"));
     validarAeropuerto(aeropuerto);
+    aeropuerto.setCodigoIata(aeropuerto.getCodigoIata().trim().toUpperCase(Locale.ROOT));
+    if (aeropuertoRepository.existsByCodigoIataIgnoreCaseAndIdNot(
+        aeropuerto.getCodigoIata(), aeropuerto.getId())) {
+      throw new IllegalArgumentException("Ya existe un aeropuerto con ese código IATA");
+    }
     existente.setCodigoIata(aeropuerto.getCodigoIata());
     existente.setNombre(aeropuerto.getNombre());
     existente.setCiudad(aeropuerto.getCiudad());
@@ -91,6 +103,10 @@ public class CatalogService {
 
   public Aeronave guardarAeronave(Aeronave aeronave) {
     validarAeronave(aeronave);
+    aeronave.setCodigo(aeronave.getCodigo().trim().toUpperCase(Locale.ROOT));
+    if (aeronaveRepository.existsByCodigoIgnoreCase(aeronave.getCodigo())) {
+      throw new IllegalArgumentException("Ya existe una aeronave con ese código");
+    }
     return aeronaveRepository.save(aeronave);
   }
 
@@ -98,9 +114,16 @@ public class CatalogService {
     if (aeronave == null || aeronave.getId() == null) {
       throw new IllegalArgumentException("Debe indicar la aeronave a modificar");
     }
-    Aeronave existente = aeronaveRepository.findById(aeronave.getId())
-        .orElseThrow(() -> new IllegalArgumentException("No existe la aeronave indicada"));
+    final Aeronave existente =
+        aeronaveRepository
+            .findById(aeronave.getId())
+            .orElseThrow(() -> new IllegalArgumentException("No existe la aeronave indicada"));
     validarAeronave(aeronave);
+    aeronave.setCodigo(aeronave.getCodigo().trim().toUpperCase(Locale.ROOT));
+    if (aeronaveRepository.existsByCodigoIgnoreCaseAndIdNot(
+        aeronave.getCodigo(), aeronave.getId())) {
+      throw new IllegalArgumentException("Ya existe una aeronave con ese código");
+    }
     existente.setModelo(aeronave.getModelo());
     existente.setFabricante(aeronave.getFabricante());
     existente.setCodigo(aeronave.getCodigo());
@@ -155,8 +178,7 @@ public class CatalogService {
       throw new IllegalArgumentException("La cantidad de asientos de Economy es inválida");
     }
     if (aeronave.getPrimeraClaseSeats() == null || aeronave.getPrimeraClaseSeats() < 0) {
-      throw new IllegalArgumentException(
-          "La cantidad de asientos de Primera Clase es inválida");
+      throw new IllegalArgumentException("La cantidad de asientos de Primera Clase es inválida");
     }
   }
 

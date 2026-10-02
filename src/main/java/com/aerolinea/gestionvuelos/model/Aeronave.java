@@ -15,22 +15,25 @@ import jakarta.validation.constraints.Size;
 @Table(name = "aeronaves")
 public class Aeronave {
 
+  private static final int MAX_TEXT_LENGTH = 80;
+  private static final int MAX_CODE_LENGTH = 30;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @NotBlank(message = "El modelo es obligatorio")
-  @Size(max = 80, message = "El modelo no puede superar 80 caracteres")
+  @Size(max = MAX_TEXT_LENGTH, message = "El modelo no puede superar 80 caracteres")
   @Column(nullable = false)
   private String modelo;
 
   @NotBlank(message = "El fabricante es obligatorio")
-  @Size(max = 80, message = "El fabricante no puede superar 80 caracteres")
+  @Size(max = MAX_TEXT_LENGTH, message = "El fabricante no puede superar 80 caracteres")
   @Column(nullable = false)
   private String fabricante;
 
   @NotBlank(message = "El código del avión es obligatorio")
-  @Size(max = 30, message = "El código no puede superar 30 caracteres")
+  @Size(max = MAX_CODE_LENGTH, message = "El código no puede superar 30 caracteres")
   @Column(nullable = false, unique = true)
   private String codigo;
 
@@ -46,7 +49,12 @@ public class Aeronave {
 
   public Aeronave() {}
 
-  public Aeronave(String modelo, String fabricante, String codigo, Integer economySeats, Integer primeraClaseSeats) {
+  public Aeronave(
+      String modelo,
+      String fabricante,
+      String codigo,
+      Integer economySeats,
+      Integer primeraClaseSeats) {
     this.modelo = modelo;
     this.fabricante = fabricante;
     this.codigo = codigo;

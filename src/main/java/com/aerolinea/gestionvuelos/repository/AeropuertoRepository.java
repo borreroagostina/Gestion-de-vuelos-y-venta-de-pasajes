@@ -14,7 +14,12 @@ public interface AeropuertoRepository extends JpaRepository<Aeropuerto, Long> {
 
   Page<Aeropuerto> findAllByOrderByNombreAsc(Pageable pageable);
 
-  @Query("SELECT a FROM Aeropuerto a WHERE LOWER(a.nombre) LIKE LOWER(CONCAT('%', :filtro, '%')) "
-      + "OR LOWER(a.ciudad) LIKE LOWER(CONCAT('%', :filtro, '%')) ORDER BY a.nombre ASC")
+  boolean existsByCodigoIataIgnoreCase(String codigoIata);
+
+  boolean existsByCodigoIataIgnoreCaseAndIdNot(String codigoIata, Long id);
+
+  @Query(
+      "SELECT a FROM Aeropuerto a WHERE LOWER(a.nombre) LIKE LOWER(CONCAT('%', :filtro, '%')) "
+          + "OR LOWER(a.ciudad) LIKE LOWER(CONCAT('%', :filtro, '%')) ORDER BY a.nombre ASC")
   Page<Aeropuerto> searchByNombreOrCiudad(String filtro, Pageable pageable);
 }

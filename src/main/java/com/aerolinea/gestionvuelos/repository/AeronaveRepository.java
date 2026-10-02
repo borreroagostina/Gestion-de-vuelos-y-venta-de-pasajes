@@ -14,7 +14,12 @@ public interface AeronaveRepository extends JpaRepository<Aeronave, Long> {
 
   Page<Aeronave> findAllByOrderByModeloAsc(Pageable pageable);
 
-  @Query("SELECT a FROM Aeronave a WHERE LOWER(a.modelo) LIKE LOWER(CONCAT('%', :filtro, '%')) "
-      + "OR LOWER(a.fabricante) LIKE LOWER(CONCAT('%', :filtro, '%')) ORDER BY a.modelo ASC")
+  boolean existsByCodigoIgnoreCase(String codigo);
+
+  boolean existsByCodigoIgnoreCaseAndIdNot(String codigo, Long id);
+
+  @Query(
+      "SELECT a FROM Aeronave a WHERE LOWER(a.modelo) LIKE LOWER(CONCAT('%', :filtro, '%')) "
+          + "OR LOWER(a.fabricante) LIKE LOWER(CONCAT('%', :filtro, '%')) ORDER BY a.modelo ASC")
   Page<Aeronave> searchByModeloOrFabricante(String filtro, Pageable pageable);
 }

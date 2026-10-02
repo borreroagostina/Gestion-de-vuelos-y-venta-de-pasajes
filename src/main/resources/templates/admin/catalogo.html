@@ -31,6 +31,7 @@
       .pagination .disabled { color: #999; cursor: not-allowed; }
       .search-row { display: flex; gap: 0.5rem; }
       .search-row input { flex: 1; }
+      .field-error { display: block; color: #b71c1c; margin-top: 0.25rem; }
     </style>
   </head>
   <body>
@@ -54,9 +55,13 @@
 
           <div class="filter-section">
             <form method="get" th:action="@{/admin/catalogo}" class="search-row">
+              <input type="hidden" name="pageAero" value="0" />
+              <input type="hidden" name="pageAeronave" th:value="${pageAeronave}" />
+              <input type="hidden" name="size" th:value="${size}" />
+              <input type="hidden" name="filtroAeronave" th:value="${filtroAeronave}" />
               <input type="text" name="filtroAeropuerto" th:value="${filtroAeropuerto}" placeholder="Buscar por nombre o ciudad" />
               <button type="submit">Buscar</button>
-              <a th:href="@{/admin/catalogo}" class="btn secondary" style="padding: 0.75rem 1rem;">Limpiar</a>
+              <a th:href="@{/admin/catalogo(pageAeronave=${pageAeronave}, size=${size}, filtroAeronave=${filtroAeronave})}" class="btn secondary" style="padding: 0.75rem 1rem;">Limpiar</a>
             </form>
           </div>
 
@@ -66,20 +71,24 @@
               <label>
                 Código IATA
                 <input type="text" th:field="*{codigoIata}" maxlength="10" required />
+                <span class="field-error" th:if="${#fields.hasErrors('codigoIata')}" th:errors="*{codigoIata}"></span>
               </label>
               <label>
                 Nombre
                 <input type="text" th:field="*{nombre}" maxlength="150" required />
+                <span class="field-error" th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}"></span>
               </label>
             </div>
             <div class="row">
               <label>
                 Ciudad
                 <input type="text" th:field="*{ciudad}" maxlength="100" required />
+                <span class="field-error" th:if="${#fields.hasErrors('ciudad')}" th:errors="*{ciudad}"></span>
               </label>
               <label>
                 País
                 <input type="text" th:field="*{pais}" maxlength="100" required />
+                <span class="field-error" th:if="${#fields.hasErrors('pais')}" th:errors="*{pais}"></span>
               </label>
             </div>
             <button type="submit" th:text="${nuevoAeropuerto.id != null} ? 'Actualizar aeropuerto' : 'Guardar aeropuerto'">Guardar aeropuerto</button>
@@ -112,13 +121,13 @@
           </table>
 
           <div class="pagination" th:if="${totalPagesAero > 1}">
-            <a th:if="${pageAero > 0}" th:href="@{/admin/catalogo(pageAero=${pageAero - 1}, filtroAeropuerto=${filtroAeropuerto})}">← Anterior</a>
+            <a th:if="${pageAero > 0}" th:href="@{/admin/catalogo(pageAero=${pageAero - 1}, pageAeronave=${pageAeronave}, size=${size}, filtroAeropuerto=${filtroAeropuerto}, filtroAeronave=${filtroAeronave})}">← Anterior</a>
             <span th:if="${pageAero == 0}" class="disabled">← Anterior</span>
             <span th:each="i : ${#numbers.sequence(0, totalPagesAero - 1)}">
               <span th:if="${i == pageAero}" class="active" th:text="${i + 1}"></span>
-              <a th:if="${i != pageAero}" th:href="@{/admin/catalogo(pageAero=${i}, filtroAeropuerto=${filtroAeropuerto})}" th:text="${i + 1}"></a>
+              <a th:if="${i != pageAero}" th:href="@{/admin/catalogo(pageAero=${i}, pageAeronave=${pageAeronave}, size=${size}, filtroAeropuerto=${filtroAeropuerto}, filtroAeronave=${filtroAeronave})}" th:text="${i + 1}"></a>
             </span>
-            <a th:if="${pageAero < totalPagesAero - 1}" th:href="@{/admin/catalogo(pageAero=${pageAero + 1}, filtroAeropuerto=${filtroAeropuerto})}">Siguiente →</a>
+            <a th:if="${pageAero < totalPagesAero - 1}" th:href="@{/admin/catalogo(pageAero=${pageAero + 1}, pageAeronave=${pageAeronave}, size=${size}, filtroAeropuerto=${filtroAeropuerto}, filtroAeronave=${filtroAeronave})}">Siguiente →</a>
             <span th:if="${pageAero == totalPagesAero - 1}" class="disabled">Siguiente →</span>
           </div>
         </section>
@@ -128,9 +137,13 @@
 
           <div class="filter-section">
             <form method="get" th:action="@{/admin/catalogo}" class="search-row">
+              <input type="hidden" name="pageAero" th:value="${pageAero}" />
+              <input type="hidden" name="pageAeronave" value="0" />
+              <input type="hidden" name="size" th:value="${size}" />
+              <input type="hidden" name="filtroAeropuerto" th:value="${filtroAeropuerto}" />
               <input type="text" name="filtroAeronave" th:value="${filtroAeronave}" placeholder="Buscar por modelo o fabricante" />
               <button type="submit">Buscar</button>
-              <a th:href="@{/admin/catalogo}" class="btn secondary" style="padding: 0.75rem 1rem;">Limpiar</a>
+              <a th:href="@{/admin/catalogo(pageAero=${pageAero}, size=${size}, filtroAeropuerto=${filtroAeropuerto})}" class="btn secondary" style="padding: 0.75rem 1rem;">Limpiar</a>
             </form>
           </div>
 
@@ -140,26 +153,31 @@
               <label>
                 Modelo
                 <input type="text" th:field="*{modelo}" maxlength="80" required />
+                <span class="field-error" th:if="${#fields.hasErrors('modelo')}" th:errors="*{modelo}"></span>
               </label>
               <label>
                 Fabricante
                 <input type="text" th:field="*{fabricante}" maxlength="80" required />
+                <span class="field-error" th:if="${#fields.hasErrors('fabricante')}" th:errors="*{fabricante}"></span>
               </label>
             </div>
             <div class="row">
               <label>
                 Código
                 <input type="text" th:field="*{codigo}" maxlength="30" required />
+                <span class="field-error" th:if="${#fields.hasErrors('codigo')}" th:errors="*{codigo}"></span>
               </label>
             </div>
             <div class="row">
               <label>
                 Economy
                 <input type="number" min="0" th:field="*{economySeats}" required />
+                <span class="field-error" th:if="${#fields.hasErrors('economySeats')}" th:errors="*{economySeats}"></span>
               </label>
               <label>
                 Primera Clase
                 <input type="number" min="0" th:field="*{primeraClaseSeats}" required />
+                <span class="field-error" th:if="${#fields.hasErrors('primeraClaseSeats')}" th:errors="*{primeraClaseSeats}"></span>
               </label>
             </div>
             <button type="submit" th:text="${nuevoAeronave.id != null} ? 'Actualizar aeronave' : 'Guardar aeronave'">Guardar aeronave</button>
@@ -192,13 +210,13 @@
           </table>
 
           <div class="pagination" th:if="${totalPagesAeronave > 1}">
-            <a th:if="${pageAeronave > 0}" th:href="@{/admin/catalogo(pageAeronave=${pageAeronave - 1}, filtroAeronave=${filtroAeronave})}">← Anterior</a>
+            <a th:if="${pageAeronave > 0}" th:href="@{/admin/catalogo(pageAero=${pageAero}, pageAeronave=${pageAeronave - 1}, size=${size}, filtroAeropuerto=${filtroAeropuerto}, filtroAeronave=${filtroAeronave})}">← Anterior</a>
             <span th:if="${pageAeronave == 0}" class="disabled">← Anterior</span>
             <span th:each="i : ${#numbers.sequence(0, totalPagesAeronave - 1)}">
               <span th:if="${i == pageAeronave}" class="active" th:text="${i + 1}"></span>
-              <a th:if="${i != pageAeronave}" th:href="@{/admin/catalogo(pageAeronave=${i}, filtroAeronave=${filtroAeronave})}" th:text="${i + 1}"></a>
+              <a th:if="${i != pageAeronave}" th:href="@{/admin/catalogo(pageAero=${pageAero}, pageAeronave=${i}, size=${size}, filtroAeropuerto=${filtroAeropuerto}, filtroAeronave=${filtroAeronave})}" th:text="${i + 1}"></a>
             </span>
-            <a th:if="${pageAeronave < totalPagesAeronave - 1}" th:href="@{/admin/catalogo(pageAeronave=${pageAeronave + 1}, filtroAeronave=${filtroAeronave})}">Siguiente →</a>
+            <a th:if="${pageAeronave < totalPagesAeronave - 1}" th:href="@{/admin/catalogo(pageAero=${pageAero}, pageAeronave=${pageAeronave + 1}, size=${size}, filtroAeropuerto=${filtroAeropuerto}, filtroAeronave=${filtroAeronave})}">Siguiente →</a>
             <span th:if="${pageAeronave == totalPagesAeronave - 1}" class="disabled">Siguiente →</span>
           </div>
         </section>

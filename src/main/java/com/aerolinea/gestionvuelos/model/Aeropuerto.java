@@ -13,6 +13,8 @@ import jakarta.validation.constraints.Size;
 @Table(name = "aeropuertos")
 public class Aeropuerto {
 
+  private static final int MAX_NAME_LENGTH = 150;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -23,7 +25,7 @@ public class Aeropuerto {
   private String codigoIata;
 
   @NotBlank(message = "El nombre del aeropuerto es obligatorio")
-  @Size(max = 150, message = "El nombre no puede superar 150 caracteres")
+  @Size(max = MAX_NAME_LENGTH, message = "El nombre no puede superar 150 caracteres")
   @Column(nullable = false)
   private String nombre;
 

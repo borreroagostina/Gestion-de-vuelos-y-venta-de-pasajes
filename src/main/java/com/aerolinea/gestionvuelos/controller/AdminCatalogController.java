@@ -4,9 +4,8 @@ import com.aerolinea.gestionvuelos.model.Aeronave;
 import com.aerolinea.gestionvuelos.model.Aeropuerto;
 import com.aerolinea.gestionvuelos.service.CatalogService;
 import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +23,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminCatalogController {
 
+  private static final int DEFAULT_PAGE_SIZE = 10;
+  private static final int MAX_PAGE_SIZE = 100;
+
   private final CatalogService catalogService;
 
   public AdminCatalogController(CatalogService catalogService) {
@@ -38,74 +40,19 @@ public class AdminCatalogController {
       @RequestParam(defaultValue = "10") int size,
       @RequestParam(required = false) String filtroAeropuerto,
       @RequestParam(required = false) String filtroAeronave) {
-    try {
-      List<Aeropuerto> todosAeropuertos = catalogService.listarAeropuertos();
-      List<Aeronave> todasAeronaves = catalogService.listarAeronaves();
-
-      // Filtrar aeropuertos
-      List<Aeropuerto> aeropuertosFiltrados = todosAeropuertos;
-      if (filtroAeropuerto != null && !filtroAeropuerto.isBlank()) {
-        String filtro = filtroAeropuerto.toLowerCase();
-        aeropuertosFiltrados = todosAeropuertos.stream()
-            .filter(a -> a.getNombre().toLowerCase().contains(filtro)
-                || a.getCiudad().toLowerCase().contains(filtro))
-            .collect(Collectors.toList());
-      }
-
-      // Filtrar aeronaves
-      List<Aeronave> aeronavesFiltradas = todasAeronaves;
-      if (filtroAeronave != null && !filtroAeronave.isBlank()) {
-        String filtro = filtroAeronave.toLowerCase();
-        aeronavesFiltradas = todasAeronaves.stream()
-            .filter(a -> a.getModelo().toLowerCase().contains(filtro)
-                || a.getFabricante().toLowerCase().contains(filtro))
-            .collect(Collectors.toList());
-      }
-
-      // Paginar aeropuertos
-      int totalPagesAero = (int) Math.ceil((double) aeropuertosFiltrados.size() / size);
-      int startAero = pageAero * size;
-      int endAero = Math.min(startAero + size, aeropuertosFiltrados.size());
-      List<Aeropuerto> aeropuertosPaginado = new ArrayList<>();
-      if (startAero < aeropuertosFiltrados.size()) {
-        aeropuertosPaginado = aeropuertosFiltrados.subList(startAero, endAero);
-      }
-
-      // Paginar aeronaves
-      int totalPagesAeronave = (int) Math.ceil((double) aeronavesFiltradas.size() / size);
-      int startAeronave = pageAeronave * size;
-      int endAeronave = Math.min(startAeronave + size, aeronavesFiltradas.size());
-      List<Aeronave> aeronavesPaginado = new ArrayList<>();
-      if (startAeronave < aeronavesFiltradas.size()) {
-        aeronavesPaginado = aeronavesFiltradas.subList(startAeronave, endAeronave);
-      }
-
-      model.addAttribute("aeropuertos", aeropuertosPaginado);
-      model.addAttribute("aeronaves", aeronavesPaginado);
-      model.addAttribute("nuevoAeropuerto", new Aeropuerto());
-      model.addAttribute("nuevoAeronave", new Aeronave());
-      model.addAttribute("filtroAeropuerto", filtroAeropuerto);
-      model.addAttribute("filtroAeronave", filtroAeronave);
-      model.addAttribute("pageAero", pageAero);
-      model.addAttribute("pageAeronave", pageAeronave);
-      model.addAttribute("size", size);
-      model.addAttribute("totalPagesAero", totalPagesAero);
-      model.addAttribute("totalPagesAeronave", totalPagesAeronave);
-    } catch (Exception e) {
-      model.addAttribute("error", "Error al cargar el catálogo: " + e.getMessage());
-      e.printStackTrace();
-    }
+    cargarListados(model, pageAero, pageAeronave, size, filtroAeropuerto, filtroAeronave);
+    model.addAttribute("nuevoAeropuerto", new Aeropuerto());
+    model.addAttribute("nuevoAeronave", new Aeronave());
     return "admin/catalogo";
   }
 
   @GetMapping("/aeropuertos/{id}/editar")
   public String editarAeropuerto(@PathVariable Long id, Model model) {
-    Aeropuerto aeropuerto = catalogService.obtenerAeropuerto(id);
+    final Aeropuerto aeropuerto = catalogService.obtenerAeropuerto(id);
     if (aeropuerto == null) {
       return "redirect:/admin/catalogo";
     }
-    model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-    model.addAttribute("aeronaves", catalogService.listarAeronaves());
+    cargarListados(model, 0, 0, DEFAULT_PAGE_SIZE, null, null);
     model.addAttribute("nuevoAeropuerto", aeropuerto);
     model.addAttribute("nuevoAeronave", new Aeronave());
     return "admin/catalogo";
@@ -113,12 +60,11 @@ public class AdminCatalogController {
 
   @GetMapping("/aeronaves/{id}/editar")
   public String editarAeronave(@PathVariable Long id, Model model) {
-    Aeronave aeronave = catalogService.obtenerAeronave(id);
+    final Aeronave aeronave = catalogService.obtenerAeronave(id);
     if (aeronave == null) {
       return "redirect:/admin/catalogo";
     }
-    model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-    model.addAttribute("aeronaves", catalogService.listarAeronaves());
+    cargarListados(model, 0, 0, DEFAULT_PAGE_SIZE, null, null);
     model.addAttribute("nuevoAeropuerto", new Aeropuerto());
     model.addAttribute("nuevoAeronave", aeronave);
     return "admin/catalogo";
@@ -131,9 +77,7 @@ public class AdminCatalogController {
       RedirectAttributes redirectAttributes,
       Model model) {
     if (bindingResult.hasErrors()) {
-      model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-      model.addAttribute("aeronaves", catalogService.listarAeronaves());
-      model.addAttribute("nuevoAeronave", new Aeronave());
+      prepararFormularioAeropuerto(model);
       return "admin/catalogo";
     }
     try {
@@ -145,25 +89,28 @@ public class AdminCatalogController {
         redirectAttributes.addFlashAttribute("success", "Aeropuerto guardado correctamente.");
       }
     } catch (IllegalArgumentException e) {
-      model.addAttribute("error", e.getMessage());
-      model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-      model.addAttribute("aeronaves", catalogService.listarAeronaves());
-      model.addAttribute("nuevoAeronave", new Aeronave());
+      bindingResult.rejectValue("codigoIata", "duplicate", e.getMessage());
+      prepararFormularioAeropuerto(model);
+      return "admin/catalogo";
+    } catch (DataIntegrityViolationException e) {
+      bindingResult.rejectValue(
+          "codigoIata", "duplicate", "Ya existe un aeropuerto con ese código IATA");
+      prepararFormularioAeropuerto(model);
       return "admin/catalogo";
     }
     return "redirect:/admin/catalogo";
   }
 
   @PostMapping("/aeropuertos/{id}/eliminar")
-  public String eliminarAeropuerto(
-      @PathVariable Long id, RedirectAttributes redirectAttributes) {
+  public String eliminarAeropuerto(@PathVariable Long id, RedirectAttributes redirectAttributes) {
     try {
       catalogService.eliminarAeropuerto(id);
       redirectAttributes.addFlashAttribute("success", "Aeropuerto eliminado correctamente.");
     } catch (IllegalStateException e) {
       redirectAttributes.addFlashAttribute("error", e.getMessage());
     } catch (Exception e) {
-      redirectAttributes.addFlashAttribute("error", "Error al eliminar el aeropuerto: " + e.getMessage());
+      redirectAttributes.addFlashAttribute(
+          "error", "Error al eliminar el aeropuerto: " + e.getMessage());
     }
     return "redirect:/admin/catalogo";
   }
@@ -175,9 +122,7 @@ public class AdminCatalogController {
       RedirectAttributes redirectAttributes,
       Model model) {
     if (bindingResult.hasErrors()) {
-      model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-      model.addAttribute("aeronaves", catalogService.listarAeronaves());
-      model.addAttribute("nuevoAeropuerto", new Aeropuerto());
+      prepararFormularioAeronave(model);
       return "admin/catalogo";
     }
     try {
@@ -189,26 +134,73 @@ public class AdminCatalogController {
         redirectAttributes.addFlashAttribute("success", "Aeronave guardada correctamente.");
       }
     } catch (IllegalArgumentException e) {
-      model.addAttribute("error", e.getMessage());
-      model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-      model.addAttribute("aeronaves", catalogService.listarAeronaves());
-      model.addAttribute("nuevoAeropuerto", new Aeropuerto());
+      bindingResult.rejectValue("codigo", "duplicate", e.getMessage());
+      prepararFormularioAeronave(model);
+      return "admin/catalogo";
+    } catch (DataIntegrityViolationException e) {
+      bindingResult.rejectValue("codigo", "duplicate", "Ya existe una aeronave con ese código");
+      prepararFormularioAeronave(model);
       return "admin/catalogo";
     }
     return "redirect:/admin/catalogo";
   }
 
   @PostMapping("/aeronaves/{id}/eliminar")
-  public String eliminarAeronave(
-      @PathVariable Long id, RedirectAttributes redirectAttributes) {
+  public String eliminarAeronave(@PathVariable Long id, RedirectAttributes redirectAttributes) {
     try {
       catalogService.eliminarAeronave(id);
       redirectAttributes.addFlashAttribute("success", "Aeronave eliminada correctamente.");
     } catch (IllegalStateException e) {
       redirectAttributes.addFlashAttribute("error", e.getMessage());
     } catch (Exception e) {
-      redirectAttributes.addFlashAttribute("error", "Error al eliminar la aeronave: " + e.getMessage());
+      redirectAttributes.addFlashAttribute(
+          "error", "Error al eliminar la aeronave: " + e.getMessage());
     }
     return "redirect:/admin/catalogo";
+  }
+
+  private void prepararFormularioAeropuerto(Model model) {
+    cargarListados(model, 0, 0, DEFAULT_PAGE_SIZE, null, null);
+    model.addAttribute("nuevoAeronave", new Aeronave());
+  }
+
+  private void prepararFormularioAeronave(Model model) {
+    cargarListados(model, 0, 0, DEFAULT_PAGE_SIZE, null, null);
+    model.addAttribute("nuevoAeropuerto", new Aeropuerto());
+  }
+
+  private void cargarListados(
+      Model model,
+      int pageAero,
+      int pageAeronave,
+      int size,
+      String filtroAeropuerto,
+      String filtroAeronave) {
+    final int pageSize = Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+    Page<Aeropuerto> aeropuertos =
+        catalogService.listarAeropuertosPaginado(Math.max(0, pageAero), pageSize, filtroAeropuerto);
+    Page<Aeronave> aeronaves =
+        catalogService.listarAeronavesPaginado(Math.max(0, pageAeronave), pageSize, filtroAeronave);
+
+    if (aeropuertos.getTotalPages() > 0 && pageAero >= aeropuertos.getTotalPages()) {
+      aeropuertos =
+          catalogService.listarAeropuertosPaginado(
+              aeropuertos.getTotalPages() - 1, pageSize, filtroAeropuerto);
+    }
+    if (aeronaves.getTotalPages() > 0 && pageAeronave >= aeronaves.getTotalPages()) {
+      aeronaves =
+          catalogService.listarAeronavesPaginado(
+              aeronaves.getTotalPages() - 1, pageSize, filtroAeronave);
+    }
+
+    model.addAttribute("aeropuertos", aeropuertos.getContent());
+    model.addAttribute("aeronaves", aeronaves.getContent());
+    model.addAttribute("filtroAeropuerto", filtroAeropuerto);
+    model.addAttribute("filtroAeronave", filtroAeronave);
+    model.addAttribute("pageAero", aeropuertos.getNumber());
+    model.addAttribute("pageAeronave", aeronaves.getNumber());
+    model.addAttribute("size", pageSize);
+    model.addAttribute("totalPagesAero", aeropuertos.getTotalPages());
+    model.addAttribute("totalPagesAeronave", aeronaves.getTotalPages());
   }
 }

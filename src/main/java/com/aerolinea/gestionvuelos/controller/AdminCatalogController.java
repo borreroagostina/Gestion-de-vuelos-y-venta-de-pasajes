@@ -33,8 +33,8 @@ public class AdminCatalogController {
   @GetMapping("/catalogo")
   public String mostrarCatalogo(
       Model model,
-      @RequestParam(defaultValue = "0") int pageAero,
-      @RequestParam(defaultValue = "0") int pageAeronave,
+      @RequestParam(defaultValue = "1") int pageAero,
+      @RequestParam(defaultValue = "1") int pageAeronave,
       @RequestParam(defaultValue = "10") int size,
       @RequestParam(required = false) String filtroAeropuerto,
       @RequestParam(required = false) String filtroAeronave) {
@@ -64,7 +64,7 @@ public class AdminCatalogController {
 
       // Paginar aeropuertos
       int totalPagesAero = (int) Math.ceil((double) aeropuertosFiltrados.size() / size);
-      int startAero = pageAero * size;
+      int startAero = (pageAero-1) * size;
       int endAero = Math.min(startAero + size, aeropuertosFiltrados.size());
       List<Aeropuerto> aeropuertosPaginado = new ArrayList<>();
       if (startAero < aeropuertosFiltrados.size()) {
@@ -73,7 +73,7 @@ public class AdminCatalogController {
 
       // Paginar aeronaves
       int totalPagesAeronave = (int) Math.ceil((double) aeronavesFiltradas.size() / size);
-      int startAeronave = pageAeronave * size;
+      int startAeronave = (pageAeronave-1) * size;
       int endAeronave = Math.min(startAeronave + size, aeronavesFiltradas.size());
       List<Aeronave> aeronavesPaginado = new ArrayList<>();
       if (startAeronave < aeronavesFiltradas.size()) {

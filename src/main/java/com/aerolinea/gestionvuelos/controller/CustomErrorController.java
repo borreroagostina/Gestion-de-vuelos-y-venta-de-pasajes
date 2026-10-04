@@ -11,9 +11,9 @@ public class CustomErrorController implements ErrorController {
 
   @RequestMapping("/error")
   public String handleError(HttpServletRequest request, Model model) {
-    Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
-    Exception exception = (Exception) request.getAttribute("javax.servlet.error.exception");
-    String message = (String) request.getAttribute("javax.servlet.error.message");
+    final Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+    final Exception exception = (Exception) request.getAttribute("javax.servlet.error.exception");
+    final String message = (String) request.getAttribute("javax.servlet.error.message");
 
     model.addAttribute("status", statusCode);
     model.addAttribute("error", request.getAttribute("javax.servlet.error.status_code"));

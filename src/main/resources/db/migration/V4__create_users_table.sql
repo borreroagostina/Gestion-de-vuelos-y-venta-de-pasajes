@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS usuarios (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    documento VARCHAR(30) NOT NULL UNIQUE,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    telefono VARCHAR(30) NOT NULL,
+    password_hash VARCHAR(100) NOT NULL,
+    rol VARCHAR(20) NOT NULL,
+    activo BOOLEAN NOT NULL DEFAULT FALSE,
+    token_activacion VARCHAR(120) NULL UNIQUE,
+    token_expira_en DATETIME NULL,
+    PRIMARY KEY (id)
+);

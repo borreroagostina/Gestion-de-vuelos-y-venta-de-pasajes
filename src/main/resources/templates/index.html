@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head>
     <meta charset="UTF-8" />
     <title th:text="${title}">Gestión de vuelos</title>
@@ -18,9 +18,17 @@
       <h1 th:text="${title}">Gestión de vuelos</h1>
       <p th:text="${message}">Sistema inicializado</p>
       <ul>
-        <li><a href="/pasajero">Perfil pasajero</a></li>
-        <li><a href="/empleado" class="secondary">Perfil empleado de mostrador</a></li>
-        <li><a href="/admin" class="admin">Perfil administrador</a></li>
+        <li sec:authorize="isAnonymous()"><a th:href="@{/registro}">Registrarme</a></li>
+        <li sec:authorize="isAnonymous()"><a th:href="@{/login}" class="secondary">Iniciar sesión</a></li>
+        <li sec:authorize="isAuthenticated()"><a th:href="@{/inicio}">Ir a mi inicio</a></li>
+        <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin/catalogo}" class="admin">Catálogo operativo</a></li>
+        <li sec:authorize="isAuthenticated()">
+          <form method="post" th:action="@{/logout}">
+            <button type="submit" style="padding: 0.7rem 1rem; border: none; border-radius: 8px; background: #6c757d; color: white; cursor: pointer;">
+              Cerrar sesión
+            </button>
+          </form>
+        </li>
       </ul>
     </div>
   </body>

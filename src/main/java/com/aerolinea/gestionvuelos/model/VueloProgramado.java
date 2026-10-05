@@ -68,7 +68,7 @@ public class VueloProgramado {
     private LocalDate fechaFinVenta;
 
     @NotBlank(message = "Debe seleccionar al menos un dia de operacion")
-    @Column(nullable = false, length = 50)
+    @Column(name = "dias_semana", nullable = false, length = 100)
     private String diasSemana;
 
     @NotNull(message = "El precio de Economy es obligatorio")

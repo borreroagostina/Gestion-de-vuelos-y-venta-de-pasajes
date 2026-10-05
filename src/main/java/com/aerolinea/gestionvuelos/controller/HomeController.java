@@ -1,18 +1,23 @@
 package com.aerolinea.gestionvuelos.controller;
 
 import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
+import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.service.CatalogService;
 import com.aerolinea.gestionvuelos.service.FlightService;
 import java.time.LocalDate;
+import java.util.Collections;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * Portada y Buscador Publico de vuelos sin requerir autenticacion (US-08).
+ * Controlador principal para portada, busqueda publica de vuelos (US-08)
+ * y redireccion inicial segun rol autenticado (US-04).
  */
 @Controller
 public class HomeController {
@@ -22,11 +27,17 @@ public class HomeController {
   private final FlightService flightService;
   private final CatalogService catalogService;
 
-  public HomeController(final FlightService flightService, final CatalogService catalogService) {
+  @Autowired
+  public HomeController(
+          @Autowired(required = false) final FlightService flightService,
+          @Autowired(required = false) final CatalogService catalogService) {
     this.flightService = flightService;
     this.catalogService = catalogService;
   }
 
+  /**
+   * Portada publica y buscador de vuelos accesible sin login (US-08).
+   */
   @GetMapping("/")
   public String home(
           final Model model,
@@ -38,14 +49,26 @@ public class HomeController {
           @RequestParam(defaultValue = "0") final int page) {
 
     model.addAttribute("title", "Gestion de Vuelos");
-    model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
+    model.addAttribute(
+            "message", "Ingresá con tu cuenta para acceder al inicio correspondiente a tu rol.");
+
+    if (catalogService != null) {
+      model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
+    } else {
+      model.addAttribute("aeropuertos", Collections.emptyList());
+    }
+
     model.addAttribute("origenId", origenId);
     model.addAttribute("destinoId", destinoId);
     model.addAttribute("fechaSalida", fechaSalida);
     model.addAttribute("fechaHasta", fechaHasta);
     model.addAttribute("orden", orden);
 
-    if (origenId != null && destinoId != null && fechaSalida != null && !fechaSalida.isBlank()) {
+    if (flightService != null
+            && origenId != null
+            && destinoId != null
+            && fechaSalida != null
+            && !fechaSalida.isBlank()) {
       try {
         final LocalDate salida = LocalDate.parse(fechaSalida);
         final LocalDate hasta =
@@ -69,5 +92,19 @@ public class HomeController {
       }
     }
     return "index";
+  }
+
+  /**
+   * Redireccion al panel del usuario autenticado segun su rol (US-04).
+   */
+  @GetMapping("/inicio")
+  public String roleHome(final Authentication authentication) {
+    if (authentication == null) {
+      return "redirect:/login";
+    }
+    return RolUsuario.fromAuthorities(authentication.getAuthorities())
+            .map(RolUsuario::getHomePath)
+            .map(path -> "redirect:" + path)
+            .orElse("redirect:/");
   }
 }

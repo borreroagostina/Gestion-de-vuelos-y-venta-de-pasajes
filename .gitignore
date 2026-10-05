@@ -7,8 +7,8 @@
 /.mvn/wrapper/*.jar
 /.mvn/wrapper/*.properties
 /.env
-.env*
-!.env.example
+.env
+!.env
 .DS_Store
 Thumbs.db
 .vscode/

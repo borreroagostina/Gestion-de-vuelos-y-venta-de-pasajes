@@ -73,6 +73,13 @@ export PATH=$JAVA_HOME/bin:$PATH
 
 La aplicación arranca y Flyway ejecuta automáticamente las migraciones de `src/main/resources/db/migration`.
 
+## Cuentas internas de prueba
+
+Luego de correr las migraciones (arranque normal de la app), quedan creadas estas cuentas activas:
+
+- Administrador: `admin@aerolinea.local` / `admin123`
+- Empleado de mostrador: `empleado@aerolinea.local` / `emp123`
+
 ### 5. Verificar la calidad del código
 
 ```bash

@@ -7,7 +7,7 @@
       body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f7fb; }
       .container { max-width: 900px; margin: 0 auto; }
       .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-      .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+      .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
       .btn { display: inline-block; padding: 0.7rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; }
       .btn.secondary { background: #6c757d; }
       ul { line-height: 1.8; }
@@ -16,9 +16,12 @@
   <body>
     <div class="container">
       <div class="nav">
-        <a class="btn secondary" href="/">Inicio</a>
-        <a class="btn" href="/admin">Admin</a>
-        <a class="btn secondary" href="/empleado">Mostrador</a>
+        <a class="btn secondary" th:href="@{/}">Inicio público</a>
+        <form method="post" th:action="@{/logout}" style="display: inline;">
+          <button type="submit" class="btn secondary" style="border: none; cursor: pointer;">
+            Cerrar sesión
+          </button>
+        </form>
       </div>
 
       <div class="card">
@@ -27,14 +30,12 @@
       </div>
 
       <div class="card">
-        <h2>Funcionalidades principales</h2>
+        <h2>Menú del rol pasajero</h2>
         <ul>
-          <li>Buscar vuelos por origen, destino y fechas.</li>
-          <li>Ver disponibilidad por horario y clase.</li>
-          <li>Comprar hasta 9 pasajes por transaccion.</li>
-          <li>Seleccionar Economy o Primera Clase.</li>
-          <li>Recibir pantallas de pago y ticket electronico.</li>
-          <li>Recibir alertas por email ante cambio de horario o cancelacion.</li>
+          <li th:each="permiso : ${permisos}">
+            <strong th:text="${permiso.titulo}">Comprar pasajes</strong>:
+            <span th:text="${permiso.descripcion}">Descripción</span>
+          </li>
         </ul>
       </div>
     </div>

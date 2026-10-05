@@ -1,109 +1,127 @@
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-  <meta charset="UTF-8" />
-  <title>Búsqueda de Vuelos - Aerolínea</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
-    .container { max-width: 1000px; margin: 0 auto; }
-    .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-    label { display: block; font-weight: bold; margin-bottom: 0.25rem; font-size: 0.9rem; }
-    select, input, button { width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cfd8dc; box-sizing: border-box; }
-    button { background: #2d6cdf; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 1.3rem; }
-    .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
-    .btn { display: inline-block; padding: 0.6rem 1rem; background: #5f6c7b; color: white; text-decoration: none; border-radius: 6px; }
-    .btn.admin { background: #dc3545; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border-bottom: 1px solid #ddd; padding: 0.75rem; text-align: left; }
-    .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
-    .error { background: #ffebee; color: #b71c1c; }
-    .info { background: #e3f2fd; color: #0d47a1; }
-    .badge { display: inline-block; padding: 0.2rem 0.5rem; background: #ff9800; color: white; border-radius: 4px; font-size: 0.8rem; }
-  </style>
+    <meta charset="UTF-8" />
+    <title th:text="${title}">Gestión de Vuelos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
+        .container { max-width: 1050px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .nav { display: flex; gap: 0.75rem; align-items: center; justify-content: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .btn { display: inline-block; padding: 0.6rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; }
+        .btn.secondary { background: #6c757d; }
+        .btn.admin { background: #dc3545; }
+        .btn-logout { padding: 0.6rem 1rem; border: none; border-radius: 6px; background: #6c757d; color: white; cursor: pointer; font-size: 0.9rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end; }
+        label { display: block; font-weight: bold; margin-bottom: 0.25rem; font-size: 0.85rem; }
+        select, input, button.btn-search { width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cfd8dc; box-sizing: border-box; }
+        button.btn-search { background: #2d6cdf; color: white; border: none; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border-bottom: 1px solid #ddd; padding: 0.75rem; text-align: left; }
+        .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+        .error { background: #ffebee; color: #b71c1c; }
+        .info { background: #e3f2fd; color: #0d47a1; }
+        .welcome-banner { margin-bottom: 1rem; color: #495057; font-size: 0.95rem; }
+    </style>
 </head>
 <body>
 <div class="container">
-  <div class="nav">
-    <a class="btn" href="/pasajero">Panel Pasajero</a>
-    <a class="btn admin" href="/admin">Panel Admin</a>
-  </div>
-
-  <div class="card">
-    <h1>Buscar Vuelos</h1>
-    <div th:if="${error}" class="alert error" th:text="${error}"></div>
-
-    <form method="get" th:action="@{/}">
-      <div class="form-grid">
-        <div>
-          <label for="origenId">Origen:</label>
-          <select name="origenId" id="origenId" required>
-            <option value="">Seleccione origen...</option>
-            <option th:each="a : ${aeropuertos}" th:value="${a.id}" th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|" th:selected="${a.id == origenId}"></option>
-          </select>
-        </div>
-        <div>
-          <label for="destinoId">Destino:</label>
-          <select name="destinoId" id="destinoId" required>
-            <option value="">Seleccione destino...</option>
-            <option th:each="a : ${aeropuertos}" th:value="${a.id}" th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|" th:selected="${a.id == destinoId}"></option>
-          </select>
-        </div>
-        <div>
-          <label for="fechaSalida">Fecha salida:</label>
-          <input type="date" id="fechaSalida" name="fechaSalida" th:value="${fechaSalida}" required />
-        </div>
-        <div>
-          <label for="fechaHasta">Fecha hasta (opcional):</label>
-          <input type="date" id="fechaHasta" name="fechaHasta" th:value="${fechaHasta}" />
-        </div>
-        <div>
-          <label for="orden">Ordenar por:</label>
-          <select name="orden" id="orden">
-            <option value="HORA_ASC" th:selected="${orden == 'HORA_ASC'}">Horario de partida</option>
-            <option value="PRECIO_ASC" th:selected="${orden == 'PRECIO_ASC'}">Menor precio</option>
-          </select>
-        </div>
-        <div>
-          <button type="submit">Buscar Vuelos</button>
-        </div>
-      </div>
-    </form>
-  </div>
-
-  <div class="card" th:if="${busquedaRealizada}">
-    <h2>Resultados disponibles</h2>
-    <div th:if="${#lists.isEmpty(resultados)}" class="alert info">
-      No se encontraron vuelos programados para la ruta y fechas seleccionadas.
+    <!-- Barra de navegación con control de roles (US-03 / US-04) -->
+    <div class="nav">
+        <a class="btn secondary" sec:authorize="isAnonymous()" th:href="@{/registro}">Registrarme</a>
+        <a class="btn" sec:authorize="isAnonymous()" th:href="@{/login}">Iniciar sesión</a>
+        <a class="btn" sec:authorize="isAuthenticated()" th:href="@{/inicio}">Ir a mi inicio</a>
+        <a class="btn admin" sec:authorize="hasRole('ADMIN')" th:href="@{/admin/catalogo}">Catálogo operativo</a>
+        <a class="btn admin" sec:authorize="hasRole('ADMIN')" th:href="@{/admin/vuelos}">Gestión de Vuelos</a>
+        <form sec:authorize="isAuthenticated()" method="post" th:action="@{/logout}" style="display: inline;">
+            <button type="submit" class="btn-logout">Cerrar sesión</button>
+        </form>
     </div>
 
-    <table th:if="${!#lists.isEmpty(resultados)}">
-      <thead>
-      <tr>
-        <th>Vuelo</th>
-        <th>Fecha y Horario</th>
-        <th>Duración</th>
-        <th>Aeronave</th>
-        <th>Economy</th>
-        <th>Primera Clase</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr th:each="v : ${resultados}">
-        <td th:text="${v.vueloProgramado.codigoVuelo}">AR123</td>
-        <td>
-          <span th:text="${v.getItinerarioFormateado()}">
-            8:15am (04/10) → 7:15am del día siguiente (05/10)
-          </span>
-        </td>
-        <td th:text="${v.getDuracionFormateada()}">2h 15m</td>
-        <td th:text="${v.vueloProgramado.aeronave.modelo}">B737</td>
-        <td th:text="|$ ${v.precioEconomy} (disp: ${v.asientosDispEconomy})|">$ 50000</td>
-        <td th:text="|$ ${v.precioPrimera} (disp: ${v.asientosDispPrimera})|">$ 85000</td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- Buscador de Vuelos (US-08) -->
+    <div class="card">
+        <h1>Buscar Vuelos</h1>
+        <p class="welcome-banner" th:if="${message}" th:text="${message}"></p>
+
+        <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+        <form method="get" th:action="@{/}">
+            <div class="form-grid">
+                <div>
+                    <label for="origenId">Aeropuerto Origen:</label>
+                    <select name="origenId" id="origenId" required>
+                        <option value="">Seleccione origen...</option>
+                        <option th:each="a : ${aeropuertos}"
+                                th:value="${a.id}"
+                                th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|"
+                                th:selected="${a.id == origenId}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label for="destinoId">Aeropuerto Destino:</label>
+                    <select name="destinoId" id="destinoId" required>
+                        <option value="">Seleccione destino...</option>
+                        <option th:each="a : ${aeropuertos}"
+                                th:value="${a.id}"
+                                th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|"
+                                th:selected="${a.id == destinoId}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label for="fechaSalida">Fecha Salida:</label>
+                    <input type="date" id="fechaSalida" name="fechaSalida" th:value="${fechaSalida}" required />
+                </div>
+                <div>
+                    <label for="fechaHasta">Fecha Hasta (opcional):</label>
+                    <input type="date" id="fechaHasta" name="fechaHasta" th:value="${fechaHasta}" />
+                </div>
+                <div>
+                    <label for="orden">Ordenar por:</label>
+                    <select name="orden" id="orden">
+                        <option value="HORA_ASC" th:selected="${orden == 'HORA_ASC'}">Horario de partida</option>
+                        <option value="PRECIO_ASC" th:selected="${orden == 'PRECIO_ASC'}">Menor precio</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn-search">Buscar Vuelos</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Resultados de la búsqueda -->
+    <div class="card" th:if="${busquedaRealizada}">
+        <h2>Opciones de Vuelo Disponibles</h2>
+
+        <div th:if="${#lists.isEmpty(resultados)}" class="alert info">
+            No se encontraron vuelos programados para la ruta y fechas seleccionadas.
+        </div>
+
+        <table th:if="${!#lists.isEmpty(resultados)}">
+            <thead>
+            <tr>
+                <th>Vuelo</th>
+                <th>Horario y Fechas</th>
+                <th>Duración</th>
+                <th>Aeronave</th>
+                <th>Economy</th>
+                <th>Primera Clase</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="v : ${resultados}">
+                <td th:text="${v.vueloProgramado.codigoVuelo}">AR1450</td>
+                <td>
+                    <span th:text="${v.getItinerarioFormateado()}">8:15am (04/10) → 7:15am del día siguiente (05/10)</span>
+                </td>
+                <td th:text="${v.getDuracionFormateada()}">2h 15m</td>
+                <td th:text="${v.vueloProgramado.aeronave.modelo}">Boeing 737</td>
+                <td th:text="|$ ${v.precioEconomy} (disponibles: ${v.asientosDispEconomy})|">$ 50000</td>
+                <td th:text="|$ ${v.precioPrimera} (disponibles: ${v.asientosDispPrimera})|">$ 85000</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 </body>
 </html>

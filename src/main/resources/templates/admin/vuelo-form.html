@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="${esEdicion} ? 'Modificar Vuelo' : 'Alta de Vuelo'">Formulario de Vuelo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
+        .container { max-width: 850px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1rem; }
+        label { display: block; font-weight: bold; margin-bottom: 0.35rem; }
+        input[type="text"], input[type="time"], input[type="date"], input[type="number"], select {
+            width: 100%; padding: 0.65rem; border-radius: 6px; border: 1px solid #cfd8dc; box-sizing: border-box;
+        }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; }
+        .checkbox-item { display: flex; align-items: center; gap: 0.4rem; font-weight: normal; }
+        .checkbox-item input { width: auto; margin: 0; }
+        button { padding: 0.8rem 1.6rem; background: #2d6cdf; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        .btn-cancel { margin-left: 1rem; color: #5f6c7b; text-decoration: none; }
+        .alert { padding: 0.8rem 1rem; border-radius: 6px; margin-bottom: 1rem; background: #ffebee; color: #b71c1c; }
+        .field-error { color: #b71c1c; font-size: 0.85rem; margin-top: 0.25rem; display: block; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1 th:text="${esEdicion} ? 'Modificar Vuelo' : 'Alta de Nuevo Vuelo'"></h1>
+        <div th:if="${error}" class="alert" th:text="${error}"></div>
+
+        <form th:action="@{/admin/vuelos/guardar}" th:object="${vueloForm}" method="post">
+            <input type="hidden" th:field="*{id}" />
+
+            <div class="row">
+                <div>
+                    <label for="codigoVuelo">Código de Vuelo:</label>
+                    <input type="text" id="codigoVuelo" th:field="*{codigoVuelo}" placeholder="Ej: AR1450" required />
+                    <span class="field-error" th:if="${#fields.hasErrors('codigoVuelo')}" th:errors="*{codigoVuelo}"></span>
+                </div>
+                <div>
+                    <label for="aeronaveId">Aeronave:</label>
+                    <select id="aeronaveId" th:field="*{aeronaveId}" required>
+                        <option value="">Seleccione aeronave...</option>
+                        <option th:each="a : ${aeronaves}" th:value="${a.id}" th:text="|${a.modelo} (${a.codigo}) - Asientos: ${a.economySeats} Eco / ${a.primeraClaseSeats} 1ra|"></option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('aeronaveId')}" th:errors="*{aeronaveId}"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div>
+                    <label for="origenId">Aeropuerto de Origen:</label>
+                    <select id="origenId" th:field="*{origenId}" required>
+                        <option value="">Seleccione origen...</option>
+                        <option th:each="a : ${aeropuertos}" th:value="${a.id}" th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|"></option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('origenId')}" th:errors="*{origenId}"></span>
+                </div>
+                <div>
+                    <label for="destinoId">Aeropuerto de Destino:</label>
+                    <select id="destinoId" th:field="*{destinoId}" required>
+                        <option value="">Seleccione destino...</option>
+                        <option th:each="a : ${aeropuertos}" th:value="${a.id}" th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|"></option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('destinoId')}" th:errors="*{destinoId}"></span>
+                </div>
+            </div>
+
+            <!-- Horarios de salida y llegada precargados -->
+            <div class="row">
+                <div>
+                    <label for="horaSalida">Horario de Salida:</label>
+                    <input type="time" id="horaSalida" name="horaSalida"
+                           th:value="${vueloForm.horaSalida != null ? #temporals.format(vueloForm.horaSalida, 'HH:mm') : ''}"
+                           required />
+                    <span class="field-error" th:if="${#fields.hasErrors('horaSalida')}" th:errors="*{horaSalida}"></span>
+                </div>
+                <div>
+                    <label for="horaLlegada">Horario de Llegada:</label>
+                    <input type="time" id="horaLlegada" name="horaLlegada"
+                           th:value="${vueloForm.horaLlegada != null ? #temporals.format(vueloForm.horaLlegada, 'HH:mm') : ''}"
+                           required />
+                    <span class="field-error" th:if="${#fields.hasErrors('horaLlegada')}" th:errors="*{horaLlegada}"></span>
+                </div>
+            </div>
+
+            <!-- Período de venta precargado -->
+            <div class="row">
+                <div>
+                    <label for="fechaInicioVenta">Inicio Período de Venta:</label>
+                    <input type="date" id="fechaInicioVenta" name="fechaInicioVenta"
+                           th:value="${vueloForm.fechaInicioVenta != null ? #temporals.format(vueloForm.fechaInicioVenta, 'yyyy-MM-dd') : ''}"
+                           required />
+                    <span class="field-error" th:if="${#fields.hasErrors('fechaInicioVenta')}" th:errors="*{fechaInicioVenta}"></span>
+                </div>
+                <div>
+                    <label for="fechaFinVenta">Fin Período de Venta:</label>
+                    <input type="date" id="fechaFinVenta" name="fechaFinVenta"
+                           th:value="${vueloForm.fechaFinVenta != null ? #temporals.format(vueloForm.fechaFinVenta, 'yyyy-MM-dd') : ''}"
+                           required />
+                    <span class="field-error" th:if="${#fields.hasErrors('fechaFinVenta')}" th:errors="*{fechaFinVenta}"></span>
+                </div>
+            </div>
+
+            <div class="row">
+                <div>
+                    <label for="precioEconomy">Precio Economy ($):</label>
+                    <input type="number" step="0.01" min="0.01" id="precioEconomy" th:field="*{precioEconomy}" required />
+                    <span class="field-error" th:if="${#fields.hasErrors('precioEconomy')}" th:errors="*{precioEconomy}"></span>
+                </div>
+                <div>
+                    <label for="precioPrimera">Precio Primera Clase ($):</label>
+                    <input type="number" step="0.01" min="0.01" id="precioPrimera" th:field="*{precioPrimera}" required />
+                    <span class="field-error" th:if="${#fields.hasErrors('precioPrimera')}" th:errors="*{precioPrimera}"></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label>Días de la semana en que opera:</label>
+                <div class="checkbox-group">
+                    <label th:each="dia : ${todosLosDias}" class="checkbox-item">
+                        <input type="checkbox" th:field="*{diasSeleccionados}" th:value="${dia.name()}" />
+                        <span th:text="${dia.etiqueta}"></span>
+                    </label>
+                </div>
+                <span class="field-error" th:if="${#fields.hasErrors('diasSeleccionados')}" th:errors="*{diasSeleccionados}"></span>
+            </div>
+
+            <button type="submit" th:text="${esEdicion} ? 'Guardar Cambios' : 'Generar Vuelo'"></button>
+            <a class="btn-cancel" href="/admin/vuelos">Cancelar</a>
+        </form>
+    </div>
+</div>
+</body>
+</html>

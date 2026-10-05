@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Gestión de Vuelos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+        .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+        .btn { display: inline-block; padding: 0.6rem 1rem; background: #2d6cdf; color: white; text-decoration: none; border-radius: 6px; }
+        .btn.secondary { background: #5f6c7b; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border-bottom: 1px solid #ddd; padding: 0.7rem; text-align: left; }
+        .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+        .success { background: #e8f5e9; color: #1b5e20; }
+        .badge-nextday { background: #d97706; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; display: inline-block; margin-left: 4px; }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; align-items: end; }
+        .filter-grid label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 0.25rem; }
+        .filter-grid input, .filter-grid select { width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <a class="btn secondary" href="/admin">Panel Admin</a>
+        <a class="btn" href="/admin/vuelos/nuevo">+ Crear Nuevo Vuelo</a>
+    </div>
+
+    <div th:if="${success}" class="alert success" th:text="${success}"></div>
+
+    <!-- Filtros por ruta y fecha solicitados en US-05 -->
+    <div class="card">
+        <h3>Filtrar Vuelos Cargados</h3>
+        <form method="get" th:action="@{/admin/vuelos}" class="filter-grid">
+            <div>
+                <label>Origen:</label>
+                <select name="origenId">
+                    <option value="">Todos los orígenes</option>
+                    <option th:each="a : ${aeropuertos}" th:value="${a.id}" th:text="|${a.ciudad} (${a.codigoIata})|" th:selected="${a.id == origenId}"></option>
+                </select>
+            </div>
+            <div>
+                <label>Destino:</label>
+                <select name="destinoId">
+                    <option value="">Todos los destinos</option>
+                    <option th:each="a : ${aeropuertos}" th:value="${a.id}" th:text="|${a.ciudad} (${a.codigoIata})|" th:selected="${a.id == destinoId}"></option>
+                </select>
+            </div>
+            <div>
+                <label>Fecha Desde:</label>
+                <input type="date" name="fechaDesde" th:value="${fechaDesde}" />
+            </div>
+            <div>
+                <label>Fecha Hasta:</label>
+                <input type="date" name="fechaHasta" th:value="${fechaHasta}" />
+            </div>
+            <div>
+                <button type="submit" class="btn" style="width: 100%; padding: 0.55rem; border: none; cursor: pointer;">Filtrar</button>
+            </div>
+            <div>
+                <a href="/admin/vuelos" class="btn secondary" style="display: block; text-align: center; padding: 0.55rem;">Limpiar</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h1>Vuelos Programados</h1>
+        <table>
+            <thead>
+            <tr>
+                <th>Código</th>
+                <th>Ruta</th>
+                <th>Horarios</th>
+                <th>Período de Venta</th>
+                <th>Días de Operación</th>
+                <th>Acción</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="v : ${vuelos}">
+                <td th:text="${v.codigoVuelo}">AR1450</td>
+                <td th:text="|${v.origen.codigoIata} → ${v.destino.codigoIata}|">EZE → MIA</td>
+                <td>
+                    <span th:text="${v.getHorarioFormateadoAdmin()}">8:15am a 7:15am del día siguiente</span>
+                </td>
+                <td th:text="${v.getPeriodoVentaFormateado()}">04/10/2026 al 31/10/2026</td>
+                <td th:text="${v.getDiasSemanaEnEspanol()}">Lunes, Miércoles</td>
+                <td>
+                    <a class="btn" th:href="@{/admin/vuelos/{id}/editar(id=${v.id})}">Modificar</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

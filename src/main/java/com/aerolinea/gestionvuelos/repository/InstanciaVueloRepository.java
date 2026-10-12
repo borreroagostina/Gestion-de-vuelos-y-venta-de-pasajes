@@ -16,11 +16,14 @@ public interface InstanciaVueloRepository extends JpaRepository<InstanciaVuelo, 
     List<InstanciaVuelo> findByVueloProgramadoIdAndFechaSalidaGreaterThanEqual(
             Long vueloId, LocalDate fecha);
 
+    List<InstanciaVuelo> findByVueloProgramadoIdOrderByFechaSalidaAsc(Long vueloId);
+
     @Query(
             "SELECT i FROM InstanciaVuelo i WHERE "
                     + "i.vueloProgramado.origen.id = :origenId "
                     + "AND i.vueloProgramado.destino.id = :destinoId "
                     + "AND i.fechaSalida BETWEEN :fechaInicio AND :fechaFin "
+                    + "AND i.cancelada = false "
                     + "AND (i.asientosDispEconomy > 0 OR i.asientosDispPrimera > 0) "
                     + "ORDER BY "
                     + "CASE WHEN :orden = 'HORA_ASC' THEN i.horaSalida END ASC, "

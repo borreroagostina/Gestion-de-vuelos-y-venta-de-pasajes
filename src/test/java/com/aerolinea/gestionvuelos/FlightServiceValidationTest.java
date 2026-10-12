@@ -15,6 +15,7 @@ import com.aerolinea.gestionvuelos.repository.AeropuertoRepository;
 import com.aerolinea.gestionvuelos.repository.InstanciaVueloRepository;
 import com.aerolinea.gestionvuelos.repository.VueloProgramadoRepository;
 import com.aerolinea.gestionvuelos.service.FlightService;
+import com.aerolinea.gestionvuelos.service.NotificationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -40,6 +41,7 @@ public class FlightServiceValidationTest {
     @Mock private InstanciaVueloRepository instanciaRepo;
     @Mock private AeropuertoRepository aeroRepo;
     @Mock private AeronaveRepository aeronaveRepo;
+    @Mock private NotificationService notificationService;
     @Mock private JdbcTemplate jdbcTemplate;
 
     @Captor private ArgumentCaptor<List<InstanciaVuelo>> instanciasCaptor;
@@ -52,7 +54,7 @@ public class FlightServiceValidationTest {
     @Before
     public void setUp() {
         flightService =
-                new FlightService(vueloRepo, instanciaRepo, aeroRepo, aeronaveRepo, jdbcTemplate);
+                new FlightService(vueloRepo, instanciaRepo, aeroRepo, aeronaveRepo, notificationService, jdbcTemplate);
 
         aeroOrigen = new Aeropuerto("EZE", "Ezeiza", "Buenos Aires", "Argentina");
         aeroOrigen.setId(ID_EZE);

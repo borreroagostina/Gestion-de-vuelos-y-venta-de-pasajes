@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8" />
+    <title>Detalle del Vuelo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .btn { display: inline-block; padding: 0.6rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 6px; border: none; cursor: pointer; }
+        .btn.secondary { background: #6c757d; }
+        .grid-vuelo { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .clase-card { padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+        .baja-disp { color: #d97706; font-weight: bold; }
+        .agotado { color: #dc2626; font-weight: bold; }
+        .seat-map { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 1.5rem; }
+        .seat { padding: 10px; text-align: center; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .seat.available { background: #e8f5e9; }
+        .seat.reserved { background: #fff3e0; cursor: not-allowed; }
+        .seat.occupied { background: #ffebee; cursor: not-allowed; }
+        .seat.selected { background: #2d6cdf; color: white; }
+        .legend { display: flex; gap: 1rem; margin-top: 1rem; font-size: 0.85rem; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .legend-box { width: 15px; height: 15px; border-radius: 2px; }
+        .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .success { background: #e8f5e9; color: #1b5e20; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="margin-bottom: 1rem;">
+        <a class="btn secondary" href="/">← Volver a la Búsqueda</a>
+    </div>
+
+    <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+    <div class="card">
+        <h1 th:text="|Vuelo ${vuelo.vueloProgramado.codigoVuelo}|"></h1>
+        <div class="grid-vuelo">
+            <div>
+                <p><strong>Origen:</strong> <span th:text="|${vuelo.vueloProgramado.origen.ciudad} (${vuelo.vueloProgramado.origen.codigoIata})|"></span></p>
+                <p><strong>Destino:</strong> <span th:text="|${vuelo.vueloProgramado.destino.ciudad} (${vuelo.vueloProgramado.destino.codigoIata})|"></span></p>
+                <p><strong>Fecha:</strong> <span th:text="${vuelo.fechaSalida}"></span></p>
+            </div>
+            <div>
+                <p><strong>Aeronave:</strong> <span th:text="${vuelo.vueloProgramado.aeronave.modelo}"></span></p>
+                <p><strong>Horario:</strong> <span th:text="${vuelo.getItinerarioFormateado()}"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Disponibilidad por Clase</h2>
+        <div class="grid-vuelo">
+            <div class="clase-card">
+                <h3>Economy</h3>
+                <p><strong>Precio:</strong> <span th:text="|$ ${vuelo.precioEconomy}|"></span></p>
+                <p th:if="${dispEconomy > 0}">
+                    <strong>Disponibles:</strong> <span th:text="${dispEconomy}"></span>
+                    <span class="baja-disp" th:if="${dispEconomy <= umbralBajaDisp}">¡Últimos lugares!</span>
+                </p>
+                <p class="agotado" th:if="${dispEconomy == 0}">AGOTADO</p>
+            </div>
+            <div class="clase-card">
+                <h3>Primera Clase</h3>
+                <p><strong>Precio:</strong> <span th:text="|$ ${vuelo.precioPrimera}|"></span></p>
+                <p th:if="${dispPrimera > 0}">
+                    <strong>Disponibles:</strong> <span th:text="${dispPrimera}"></span>
+                    <span class="baja-disp" th:if="${dispPrimera <= umbralBajaDisp}">¡Últimos lugares!</span>
+                </p>
+                <p class="agotado" th:if="${dispPrimera == 0}">AGOTADO</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Selecciona tus asientos (Máx. 9)</h2>
+        <p sec:authorize="isAnonymous()" class="alert error">Debes iniciar sesión como pasajero para reservar.</p>
+        
+        <div class="legend">
+            <div class="legend-item"><div class="legend-box" style="background: #e8f5e9; border: 1px solid #ccc;"></div> Disponible</div>
+            <div class="legend-item"><div class="legend-box" style="background: #fff3e0; border: 1px solid #ccc;"></div> Reservado</div>
+            <div class="legend-item"><div class="legend-box" style="background: #ffebee; border: 1px solid #ccc;"></div> Ocupado</div>
+            <div class="legend-item"><div class="legend-box" style="background: #2d6cdf;"></div> Tu selección</div>
+        </div>
+
+        <form th:action="@{/vuelos/{id}/reservar(id=${vuelo.id})}" method="post" id="reserveForm">
+            <div th:if="${not #lists.isEmpty(asientosPrimera)}">
+                <h3 style="margin-top: 1.5rem; border-bottom: 2px solid #2d6cdf; padding-bottom: 5px; color: #1e40af;">Primera Clase</h3>
+                <div class="seat-map" style="grid-template-columns: repeat(4, 1fr); max-width: 400px; margin: 1rem auto;">
+                    <div th:each="a : ${asientosPrimera}" 
+                         class="seat" 
+                         th:classappend="${a.estado == 'DISPONIBLE' ? 'available' : (a.estado == 'RESERVADO' ? 'reserved' : 'occupied')}"
+                         th:text="${a.numero}"
+                         th:onclick="${a.estado == 'DISPONIBLE'} ? 'toggleSeat(this, ' + ${a.id} + ')' : ''">
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${not #lists.isEmpty(asientosEconomy)}">
+                <h3 style="margin-top: 2rem; border-bottom: 2px solid #64748b; padding-bottom: 5px; color: #334155;">Clase Economy</h3>
+                <div class="seat-map" style="max-width: 600px; margin: 1rem auto;">
+                    <div th:each="a : ${asientosEconomy}" 
+                         class="seat" 
+                         th:classappend="${a.estado == 'DISPONIBLE' ? 'available' : (a.estado == 'RESERVADO' ? 'reserved' : 'occupied')}"
+                         th:text="${a.numero}"
+                         th:onclick="${a.estado == 'DISPONIBLE'} ? 'toggleSeat(this, ' + ${a.id} + ')' : ''">
+                    </div>
+                </div>
+            </div>
+
+            <div id="selectedSeatsInputs"></div>
+            <div style="margin-top: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0;">
+                <div>
+                    <strong style="font-size: 1.2rem; color: #2d6cdf;"><span id="seatCount">0</span></strong> asientos seleccionados
+                </div>
+                <button type="submit" class="btn" id="btnReservar" disabled 
+                        style="padding: 0.8rem 2.5rem; font-size: 1.1rem; font-weight: bold; background: #16a34a; border: none; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);" 
+                        sec:authorize="hasRole('PASAJERO')">
+                    CONTINUAR CON LA RESERVA
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let selectedIds = new Set();
+
+    function toggleSeat(element, id) {
+        if (selectedIds.has(id)) {
+            selectedIds.delete(id);
+            element.classList.remove('selected');
+        } else {
+            if (selectedIds.size >= 9) {
+                alert("No puedes seleccionar más de 9 asientos.");
+                return;
+            }
+            selectedIds.add(id);
+            element.classList.add('selected');
+        }
+        updateForm();
+    }
+
+    function updateForm() {
+        const container = document.getElementById('selectedSeatsInputs');
+        container.innerHTML = '';
+        selectedIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'asientoIds';
+            input.value = id;
+            container.appendChild(input);
+        });
+        document.getElementById('seatCount').innerText = selectedIds.size;
+        document.getElementById('btnReservar').disabled = selectedIds.size === 0;
+    }
+</script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 package com.aerolinea.gestionvuelos.service;
 
+import com.aerolinea.gestionvuelos.model.Aeronave;
+import com.aerolinea.gestionvuelos.model.Asiento;
 import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
 import com.aerolinea.gestionvuelos.model.VueloProgramado;
 import com.aerolinea.gestionvuelos.repository.AeronaveRepository;
@@ -28,6 +30,7 @@ public class FlightService {
     private final InstanciaVueloRepository instanciaRepo;
     private final AeropuertoRepository aeroRepo;
     private final AeronaveRepository aeronaveRepo;
+    private final NotificationService notificationService;
     private final JdbcTemplate jdbcTemplate;
 
     public FlightService(
@@ -35,11 +38,13 @@ public class FlightService {
             final InstanciaVueloRepository instanciaRepo,
             final AeropuertoRepository aeroRepo,
             final AeronaveRepository aeronaveRepo,
+            final NotificationService notificationService,
             final JdbcTemplate jdbcTemplate) {
         this.vueloRepo = vueloRepo;
         this.instanciaRepo = instanciaRepo;
         this.aeroRepo = aeroRepo;
         this.aeronaveRepo = aeronaveRepo;
+        this.notificationService = notificationService;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -57,6 +62,14 @@ public class FlightService {
 
     public VueloProgramado obtenerVuelo(final Long id) {
         return vueloRepo.findById(id).orElse(null);
+    }
+
+    public InstanciaVuelo obtenerInstancia(final Long id) {
+        return instanciaRepo.findById(id).orElse(null);
+    }
+
+    public List<InstanciaVuelo> listarInstanciasDeVuelo(final Long vueloProgId) {
+        return instanciaRepo.findByVueloProgramadoIdOrderByFechaSalidaAsc(vueloProgId);
     }
 
     @Transactional
@@ -150,6 +163,36 @@ public class FlightService {
         return actualizado;
     }
 
+    @Transactional
+    public void cancelarInstanciaVuelo(final Long instanciaId, final String motivo) {
+        final InstanciaVuelo instancia = instanciaRepo.findById(instanciaId)
+                .orElseThrow(() -> new IllegalArgumentException("La instancia de vuelo no existe"));
+        instancia.setCancelada(true);
+        instancia.setMotivoCancelacion(motivo);
+        instanciaRepo.save(instancia);
+        notificationService.notificarCancelacionVuelo(instancia, motivo);
+    }
+
+    @Transactional
+    public void cancelarVueloProgramado(final Long vueloProgId, final String motivo) {
+        final VueloProgramado vuelo = vueloRepo.findById(vueloProgId)
+                .orElseThrow(() -> new IllegalArgumentException("El vuelo programado no existe"));
+        vuelo.setCancelado(true);
+        vuelo.setMotivoCancelacion(motivo);
+        vueloRepo.save(vuelo);
+
+        final List<InstanciaVuelo> futuras = instanciaRepo
+                .findByVueloProgramadoIdAndFechaSalidaGreaterThanEqual(vueloProgId, LocalDate.now());
+        for (final InstanciaVuelo inst : futuras) {
+            if (!inst.isCancelada()) {
+                inst.setCancelada(true);
+                inst.setMotivoCancelacion("Cancelacion de toda la programacion: " + motivo);
+                instanciaRepo.save(inst);
+                notificationService.notificarCancelacionVuelo(inst, motivo);
+            }
+        }
+    }
+
     public Page<InstanciaVuelo> buscarVuelosPublicos(
             final Long origenId,
             final Long destinoId,
@@ -207,7 +250,58 @@ public class FlightService {
             }
             cursor = cursor.plusDays(1);
         }
-        instanciaRepo.saveAll(lista);
+        final List<InstanciaVuelo> guardadas = instanciaRepo.saveAll(lista);
+        for (final InstanciaVuelo inst : guardadas) {
+            generarAsientosParaInstancia(inst);
+        }
+    }
+
+    private void generarAsientosParaInstancia(final InstanciaVuelo inst) {
+        final List<Asiento> asientos = new ArrayList<>();
+        final Aeronave aeronave = inst.getVueloProgramado().getAeronave();
+
+        // Primera Clase: 4 asientos por fila (A, B, C, D)
+        int asientosPrimera = aeronave.getPrimeraClaseSeats();
+        int filaActual = 1;
+        char[] letrasPrimera = {'A', 'B', 'C', 'D'};
+        for (int i = 0; i < asientosPrimera; i++) {
+            int row = filaActual + (i / 4);
+            char letra = letrasPrimera[i % 4];
+            final Asiento a = new Asiento();
+            a.setInstanciaVuelo(inst);
+            a.setNumero(String.format("%02d%c", row, letra));
+            a.setClase("PRIMERA");
+            a.setEstado("DISPONIBLE");
+            asientos.add(a);
+        }
+
+        // Economy: 6 asientos por fila (A, B, C, D, E, F)
+        int ultimaFilaPrimera = filaActual + (asientosPrimera > 0 ? (asientosPrimera - 1) / 4 : -1);
+        int filaInicioEconomy = Math.max(ultimaFilaPrimera + 2, 5); // Al menos fila 5
+
+        int asientosEconomy = aeronave.getEconomySeats();
+        char[] letrasEconomy = {'A', 'B', 'C', 'D', 'E', 'F'};
+        for (int i = 0; i < asientosEconomy; i++) {
+            int row = filaInicioEconomy + (i / 6);
+            char letra = letrasEconomy[i % 6];
+            final Asiento a = new Asiento();
+            a.setInstanciaVuelo(inst);
+            a.setNumero(String.format("%02d%c", row, letra));
+            a.setClase("ECONOMY");
+            a.setEstado("DISPONIBLE");
+            asientos.add(a);
+        }
+
+        jdbcTemplate.batchUpdate(
+                "INSERT INTO asientos (instancia_vuelo_id, numero, clase, estado) VALUES (?, ?, ?, ?)",
+                asientos,
+                100,
+                (ps, argument) -> {
+                    ps.setLong(1, argument.getInstanciaVuelo().getId());
+                    ps.setString(2, argument.getNumero());
+                    ps.setString(3, argument.getClase());
+                    ps.setString(4, argument.getEstado());
+                });
     }
 
     public void validarReglasNegocio(final VueloProgramado vuelo) {

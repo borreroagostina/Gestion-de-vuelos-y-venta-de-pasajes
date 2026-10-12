@@ -85,6 +85,12 @@ public class VueloProgramado {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precioPrimera;
 
+    @Column(nullable = false)
+    private boolean cancelado = false;
+
+    @Column(name = "motivo_cancelacion")
+    private String motivoCancelacion;
+
     public VueloProgramado() {}
 
     public Long getId() {
@@ -208,6 +214,22 @@ public class VueloProgramado {
 
     public void setPrecioPrimera(final BigDecimal precioPrimera) {
         this.precioPrimera = precioPrimera;
+    }
+
+    public boolean isCancelado() {
+        return cancelado;
+    }
+
+    public void setCancelado(final boolean cancelado) {
+        this.cancelado = cancelado;
+    }
+
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public void setMotivoCancelacion(final String motivoCancelacion) {
+        this.motivoCancelacion = motivoCancelacion;
     }
 
     public boolean llegaAlDiaSiguiente() {

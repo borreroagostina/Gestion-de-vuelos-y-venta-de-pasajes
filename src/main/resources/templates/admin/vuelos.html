@@ -74,7 +74,8 @@
                 <th>Horarios</th>
                 <th>Período de Venta</th>
                 <th>Días de Operación</th>
-                <th>Acción</th>
+                <th>Estado</th>
+                <th>Acciones</th>
             </tr>
             </thead>
             <tbody>
@@ -87,12 +88,34 @@
                 <td th:text="${v.getPeriodoVentaFormateado()}">04/10/2026 al 31/10/2026</td>
                 <td th:text="${v.getDiasSemanaEnEspanol()}">Lunes, Miércoles</td>
                 <td>
-                    <a class="btn" th:href="@{/admin/vuelos/{id}/editar(id=${v.id})}">Modificar</a>
+                    <span th:if="${v.cancelado}" style="color: #dc2626; font-weight: bold;">CANCELADO</span>
+                    <span th:unless="${v.cancelado}">Activo</span>
+                </td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a class="btn" th:href="@{/admin/vuelos/{id}/editar(id=${v.id})}">Modificar</a>
+                        <a class="btn secondary" th:href="@{/admin/vuelos/{id}/instancias(id=${v.id})}">Fechas</a>
+                        <form th:if="${!v.cancelado}" th:action="@{/admin/vuelos/{id}/cancelar(id=${v.id})}" method="post" onsubmit="return solicitarMotivo(this);">
+                            <input type="hidden" name="motivo" id="motivoProgInput" />
+                            <button type="submit" class="btn" style="background: #dc2626;">Cancelar Todo</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+    function solicitarMotivo(form) {
+        const motivo = prompt("Ingrese el motivo de la cancelación de toda la programación:");
+        if (motivo && motivo.trim().length > 0) {
+            form.querySelector('input[name="motivo"]').value = motivo;
+            return true;
+        }
+        return false;
+    }
+</script>
 </body>
 </html>

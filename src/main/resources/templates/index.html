@@ -106,6 +106,7 @@
                 <th>Aeronave</th>
                 <th>Economy</th>
                 <th>Primera Clase</th>
+                <th>Acción</th>
             </tr>
             </thead>
             <tbody>
@@ -118,6 +119,9 @@
                 <td th:text="${v.vueloProgramado.aeronave.modelo}">Boeing 737</td>
                 <td th:text="|$ ${v.precioEconomy} (disponibles: ${v.asientosDispEconomy})|">$ 50000</td>
                 <td th:text="|$ ${v.precioPrimera} (disponibles: ${v.asientosDispPrimera})|">$ 85000</td>
+                <td>
+                    <a class="btn" th:href="@{/vuelos/{id}(id=${v.id})}">Ver Detalle</a>
+                </td>
             </tr>
             </tbody>
         </table>

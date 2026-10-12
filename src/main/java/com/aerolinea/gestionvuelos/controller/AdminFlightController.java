@@ -141,6 +141,46 @@ public class AdminFlightController {
         return "admin/vuelo-form";
     }
 
+    @GetMapping("/{id}/instancias")
+    public String listarInstancias(@PathVariable final Long id, final Model model) {
+        final VueloProgramado vuelo = flightService.obtenerVuelo(id);
+        if (vuelo == null) {
+            return "redirect:/admin/vuelos";
+        }
+        model.addAttribute("vuelo", vuelo);
+        model.addAttribute("instancias", flightService.listarInstanciasDeVuelo(vuelo.getId()));
+        return "admin/instancias";
+    }
+
+    @PostMapping("/{id}/cancelar")
+    public String cancelarVueloProgramado(
+            @PathVariable final Long id,
+            @RequestParam final String motivo,
+            final RedirectAttributes ra) {
+        try {
+            flightService.cancelarVueloProgramado(id, motivo);
+            ra.addFlashAttribute("success", "Toda la programacion del vuelo ha sido cancelada.");
+        } catch (final Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/vuelos";
+    }
+
+    @PostMapping("/instancia/{id}/cancelar")
+    public String cancelarInstanciaPuntual(
+            @PathVariable final Long id,
+            @RequestParam final Long vueloId,
+            @RequestParam final String motivo,
+            final RedirectAttributes ra) {
+        try {
+            flightService.cancelarInstanciaVuelo(id, motivo);
+            ra.addFlashAttribute("success", "La fecha puntual del vuelo ha sido cancelada.");
+        } catch (final Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/vuelos/" + vueloId + "/instancias";
+    }
+
     private void cargarAtributosFormulario(final Model model) {
         model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
         model.addAttribute("aeronaves", catalogService.listarAeronaves());

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Instancias de Vuelo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+        .btn { display: inline-block; padding: 0.6rem 1rem; background: #2d6cdf; color: white; text-decoration: none; border-radius: 6px; border: none; cursor: pointer; }
+        .btn.secondary { background: #5f6c7b; }
+        .btn.danger { background: #dc2626; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border-bottom: 1px solid #ddd; padding: 0.7rem; text-align: left; }
+        .status-cancelled { color: #dc2626; font-weight: bold; }
+        .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+        .success { background: #e8f5e9; color: #1b5e20; }
+        .error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="margin-bottom: 1rem;">
+        <a class="btn secondary" href="/admin/vuelos">← Volver a Vuelos</a>
+    </div>
+
+    <div th:if="${success}" class="alert success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+    <div class="card">
+        <h1 th:text="|Instancias del vuelo ${vuelo.codigoVuelo}|">Instancias del vuelo</h1>
+        <p th:text="|Ruta: ${vuelo.origen.codigoIata} → ${vuelo.destino.codigoIata}|"></p>
+
+        <table>
+            <thead>
+            <tr>
+                <th>Fecha Salida</th>
+                <th>Horario</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="i : ${instancias}">
+                <td th:text="${i.fechaSalida}"></td>
+                <td th:text="${i.getItinerarioFormateado()}"></td>
+                <td>
+                    <span th:if="${i.cancelada}" class="status-cancelled" th:title="${i.motivoCancelacion}">CANCELADO</span>
+                    <span th:unless="${i.cancelada}">Activo</span>
+                </td>
+                <td>
+                    <form th:if="${!i.cancelada}" th:action="@{/admin/vuelos/instancia/{id}/cancelar(id=${i.id})}" method="post" onsubmit="return solicitarMotivo(this);">
+                        <input type="hidden" name="vueloId" th:value="${vuelo.id}" />
+                        <input type="hidden" name="motivo" id="motivoInput" />
+                        <button type="submit" class="btn danger">Cancelar Fecha</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function solicitarMotivo(form) {
+        const motivo = prompt("Ingrese el motivo de la cancelación:");
+        if (motivo && motivo.trim().length > 0) {
+            form.querySelector('#motivoInput').value = motivo;
+            return true;
+        }
+        return false;
+    }
+</script>
+</body>
+</html>

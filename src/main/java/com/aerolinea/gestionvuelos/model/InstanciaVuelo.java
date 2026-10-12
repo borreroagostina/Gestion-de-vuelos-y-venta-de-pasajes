@@ -61,6 +61,12 @@ public class InstanciaVuelo {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precioPrimera;
 
+    @Column(nullable = false)
+    private boolean cancelada = false;
+
+    @Column(name = "motivo_cancelacion")
+    private String motivoCancelacion;
+
     public InstanciaVuelo() {}
 
     public Long getId() {
@@ -141,6 +147,22 @@ public class InstanciaVuelo {
 
     public void setPrecioPrimera(final BigDecimal precioPrimera) {
         this.precioPrimera = precioPrimera;
+    }
+
+    public boolean isCancelada() {
+        return cancelada;
+    }
+
+    public void setCancelada(final boolean cancelada) {
+        this.cancelada = cancelada;
+    }
+
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public void setMotivoCancelacion(final String motivoCancelacion) {
+        this.motivoCancelacion = motivoCancelacion;
     }
 
     public String getDuracionFormateada() {

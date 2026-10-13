@@ -20,6 +20,9 @@ public class ReservaTemporal {
     @Column(nullable = false)
     private LocalDateTime fechaExpiracion;
 
+    @Column(name = "sesion_id", length = 100)
+    private String sesionId;
+
     @ManyToMany
     @JoinTable(
         name = "reserva_asientos",
@@ -52,6 +55,14 @@ public class ReservaTemporal {
 
     public void setFechaExpiracion(LocalDateTime fechaExpiracion) {
         this.fechaExpiracion = fechaExpiracion;
+    }
+
+    public String getSesionId() {
+        return sesionId;
+    }
+
+    public void setSesionId(String sesionId) {
+        this.sesionId = sesionId;
     }
 
     public Set<Asiento> getAsientos() {

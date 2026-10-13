@@ -15,6 +15,7 @@ public class PassengerController {
     model.addAttribute("title", "Panel del pasajero");
     model.addAttribute("subtitle", "Busqueda, compra y gestion de viajes");
     model.addAttribute("permisos", RolUsuario.PASAJERO.getPermisos());
+    model.addAttribute("compraPath", "/");
     return "pasajero";
   }
 }

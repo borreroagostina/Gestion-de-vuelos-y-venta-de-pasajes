@@ -53,6 +53,12 @@ public class USIntegrationTest {
     @Autowired
     private UsuarioRepository usuarioRepo;
 
+    @Autowired
+    private ReservaAsientoRepository reservaAsientoRepo;
+
+    @Autowired
+    private ReservaTemporalRepository reservaRepo;
+
     private Aeropuerto eze;
     private Aeropuerto cor;
     private Aeronave boeing;
@@ -149,7 +155,7 @@ public class USIntegrationTest {
         List<Long> diezAsientos = asientos.stream().limit(10).map(Asiento::getId).collect(Collectors.toList());
         
         try {
-            bookingService.reservarAsientos(testUser.getId(), diezAsientos);
+            bookingService.reservarAsientos(testUser.getId(), "test-session-limit", diezAsientos);
             Assert.fail("Deberia haber fallado por limite de 9 asientos");
         } catch (IllegalArgumentException e) {
             Assert.assertEquals("No se pueden reservar mas de 9 asientos", e.getMessage());
@@ -171,7 +177,7 @@ public class USIntegrationTest {
         for (int i = 0; i < numThreads; i++) {
             tasks.add(() -> {
                 try {
-                    bookingService.reservarAsientos(testUser.getId(), targetId);
+                    bookingService.reservarAsientos(testUser.getId(), "test-session-concurrency", targetId);
                     return true;
                 } catch (Exception e) {
                     return false;
@@ -187,6 +193,33 @@ public class USIntegrationTest {
 
         Assert.assertEquals("Solo uno deberia haber tenido exito", 1, successCount);
         executor.shutdown();
+    }
+
+    @Test
+    @Transactional
+    public void testUS10_NoPermiteMezclarClasesEnMismaOperacion() {
+        VueloProgramado v = crearVueloGenerico("MIXCL");
+        InstanciaVuelo inst = flightService.listarInstanciasDeVuelo(v.getId()).get(0);
+        Asiento primera = asientoRepo.findByInstanciaVueloIdOrderByNumeroAsc(inst.getId()).stream()
+                .filter(a -> "PRIMERA".equals(a.getClase()))
+                .findFirst()
+                .orElseThrow();
+        Asiento economy = asientoRepo.findByInstanciaVueloIdOrderByNumeroAsc(inst.getId()).stream()
+                .filter(a -> "ECONOMY".equals(a.getClase()))
+                .findFirst()
+                .orElseThrow();
+
+        try {
+            bookingService.reservarAsientos(
+                    testUser.getId(),
+                    "test-session-mixed",
+                    List.of(primera.getId(), economy.getId()),
+                    "PRIMERA");
+            Assert.fail("Deberia rechazar seleccion mixta de clases");
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals(
+                    "Debe seleccionar asientos de una sola clase por operación", e.getMessage());
+        }
     }
 
     @Test
@@ -216,11 +249,15 @@ public class USIntegrationTest {
     }
 
     private VueloProgramado crearVueloGenerico(String codigo) {
+        return crearVueloConAeronave(codigo, boeing);
+    }
+
+    private VueloProgramado crearVueloConAeronave(String codigo, Aeronave aeronave) {
         VueloProgramado v = new VueloProgramado();
         v.setCodigoVuelo(codigo);
         v.setOrigen(eze);
         v.setDestino(cor);
-        v.setAeronave(boeing);
+        v.setAeronave(aeronave);
         v.setHoraSalida(LocalTime.of(10, 0));
         v.setHoraLlegada(LocalTime.of(12, 0));
         v.setFechaInicioVenta(LocalDate.now().plusDays(1));
@@ -229,5 +266,61 @@ public class USIntegrationTest {
         v.setPrecioEconomy(new BigDecimal("1000"));
         v.setPrecioPrimera(new BigDecimal("2000"));
         return flightService.crearVuelo(v);
+    }
+
+    @Test
+    @Transactional
+    public void testUS09_DisponibilidadPorClaseRestaReservasActivasYVendidos() {
+        Aeronave aeronaveChica = new Aeronave("Mini Jet", "Test", "M" + System.nanoTime(), 6, 2);
+        aeronaveChica = aeronaveRepo.save(aeronaveChica);
+
+        VueloProgramado v = crearVueloConAeronave("US09DET", aeronaveChica);
+        InstanciaVuelo inst = flightService.listarInstanciasDeVuelo(v.getId()).get(0);
+        List<Asiento> asientos = bookingService.listarAsientosDeInstancia(inst.getId());
+
+        Asiento ecoReservado = asientos.stream().filter(a -> "ECONOMY".equals(a.getClase())).findFirst().orElseThrow();
+        List<Asiento> economy = asientos.stream().filter(a -> "ECONOMY".equals(a.getClase())).toList();
+        Asiento ecoVendido = economy.get(1);
+
+        List<Asiento> primera = asientos.stream().filter(a -> "PRIMERA".equals(a.getClase())).toList();
+        Asiento priVendido1 = primera.get(0);
+        Asiento priVendido2 = primera.get(1);
+
+        bookingService.reservarAsientos(testUser.getId(), "test-session-us09", List.of(ecoReservado.getId()));
+
+        ecoVendido.setEstado("OCUPADO");
+        priVendido1.setEstado("OCUPADO");
+        priVendido2.setEstado("OCUPADO");
+        asientoRepo.saveAll(List.of(ecoVendido, priVendido1, priVendido2));
+
+        long disponiblesEconomy = bookingService.contarDisponibles(inst.getId(), "ECONOMY");
+        long disponiblesPrimera = bookingService.contarDisponibles(inst.getId(), "PRIMERA");
+
+        Assert.assertEquals(4L, disponiblesEconomy);
+        Assert.assertEquals(0L, disponiblesPrimera);
+    }
+
+    @Test
+    @Transactional
+    public void testUS10_LiberacionAutomaticaDeReservasExpiradas() {
+        VueloProgramado v = crearVueloGenerico("US10EXP");
+        InstanciaVuelo inst = flightService.listarInstanciasDeVuelo(v.getId()).get(0);
+        Asiento asiento = bookingService.listarAsientosDeInstancia(inst.getId()).get(0);
+
+        ReservaTemporal reserva =
+                bookingService.reservarAsientos(
+                        testUser.getId(), "test-session-expiration", List.of(asiento.getId()));
+        reserva.setFechaExpiracion(java.time.LocalDateTime.now().minusMinutes(1));
+
+        reservaRepo.save(reserva);
+        bookingService.liberarReservasExpiradas();
+
+        Asiento actualizado = asientoRepo.findById(asiento.getId()).orElseThrow();
+        Assert.assertEquals("DISPONIBLE", actualizado.getEstado());
+
+        boolean todosLiberados =
+                reservaAsientoRepo.findByReservaTemporalId(reserva.getId()).stream()
+                        .allMatch(r -> r.getEstado() == EstadoReservaAsiento.LIBERADO);
+        Assert.assertTrue(todosLiberados);
     }
 }

@@ -25,6 +25,10 @@
         .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
         .error { background: #fee2e2; color: #991b1b; }
         .success { background: #e8f5e9; color: #1b5e20; }
+        .class-choice { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 1rem 0; }
+        .btn.class-btn { background: #2563eb; }
+        .btn.class-btn.active { background: #1d4ed8; box-shadow: 0 0 0 2px #bfdbfe; }
+        .selection-info { margin-top: 0.7rem; font-size: 0.95rem; color: #1e3a8a; }
     </style>
 </head>
 <body>
@@ -39,8 +43,8 @@
         <h1 th:text="|Vuelo ${vuelo.vueloProgramado.codigoVuelo}|"></h1>
         <div class="grid-vuelo">
             <div>
-                <p><strong>Origen:</strong> <span th:text="|${vuelo.vueloProgramado.origen.ciudad} (${vuelo.vueloProgramado.origen.codigoIata})|"></span></p>
-                <p><strong>Destino:</strong> <span th:text="|${vuelo.vueloProgramado.destino.ciudad} (${vuelo.vueloProgramado.destino.codigoIata})|"></span></p>
+                <p><strong>Origen:</strong> <span th:text="|${vuelo.vueloProgramado.origen.codigoIata} - ${vuelo.vueloProgramado.origen.ciudad}, ${vuelo.vueloProgramado.origen.nombre}|"></span></p>
+                <p><strong>Destino:</strong> <span th:text="|${vuelo.vueloProgramado.destino.codigoIata} - ${vuelo.vueloProgramado.destino.ciudad}, ${vuelo.vueloProgramado.destino.nombre}|"></span></p>
                 <p><strong>Fecha:</strong> <span th:text="${vuelo.fechaSalida}"></span></p>
             </div>
             <div>
@@ -58,18 +62,20 @@
                 <p><strong>Precio:</strong> <span th:text="|$ ${vuelo.precioEconomy}|"></span></p>
                 <p th:if="${dispEconomy > 0}">
                     <strong>Disponibles:</strong> <span th:text="${dispEconomy}"></span>
-                    <span class="baja-disp" th:if="${dispEconomy <= umbralBajaDisp}">¡Últimos lugares!</span>
+                    <span class="baja-disp" th:if="${dispEconomy < umbralBajaDisp}">¡Últimos lugares disponibles!</span>
                 </p>
-                <p class="agotado" th:if="${dispEconomy == 0}">AGOTADO</p>
+                <p class="agotado" th:if="${dispEconomy == 0}">Agotada</p>
+                <p class="agotado" th:if="${dispEconomy == 0}">Compra deshabilitada para Economy</p>
             </div>
             <div class="clase-card">
                 <h3>Primera Clase</h3>
                 <p><strong>Precio:</strong> <span th:text="|$ ${vuelo.precioPrimera}|"></span></p>
                 <p th:if="${dispPrimera > 0}">
                     <strong>Disponibles:</strong> <span th:text="${dispPrimera}"></span>
-                    <span class="baja-disp" th:if="${dispPrimera <= umbralBajaDisp}">¡Últimos lugares!</span>
+                    <span class="baja-disp" th:if="${dispPrimera < umbralBajaDisp}">¡Últimos lugares disponibles!</span>
                 </p>
-                <p class="agotado" th:if="${dispPrimera == 0}">AGOTADO</p>
+                <p class="agotado" th:if="${dispPrimera == 0}">Agotada</p>
+                <p class="agotado" th:if="${dispPrimera == 0}">Compra deshabilitada para Primera Clase</p>
             </div>
         </div>
     </div>
@@ -77,6 +83,17 @@
     <div class="card">
         <h2>Selecciona tus asientos (Máx. 9)</h2>
         <p sec:authorize="isAnonymous()" class="alert error">Debes iniciar sesión como pasajero para reservar.</p>
+        <div class="class-choice">
+            <button type="button" class="btn class-btn" id="btnPrimera" th:if="${dispPrimera > 0}" onclick="selectClass('PRIMERA')">
+                Elegir Primera Clase
+            </button>
+            <button type="button" class="btn class-btn" id="btnEconomy" th:if="${dispEconomy > 0}" onclick="selectClass('ECONOMY')">
+                Elegir Economy
+            </button>
+        </div>
+        <p class="selection-info">
+            Clase seleccionada: <strong id="selectedClassLabel">Ninguna</strong>
+        </p>
         
         <div class="legend">
             <div class="legend-item"><div class="legend-box" style="background: #e8f5e9; border: 1px solid #ccc;"></div> Disponible</div>
@@ -86,31 +103,42 @@
         </div>
 
         <form th:action="@{/vuelos/{id}/reservar(id=${vuelo.id})}" method="post" id="reserveForm">
-            <div th:if="${not #lists.isEmpty(asientosPrimera)}">
+            <div th:if="${dispPrimera > 0 and not #lists.isEmpty(asientosPrimera)}">
                 <h3 style="margin-top: 1.5rem; border-bottom: 2px solid #2d6cdf; padding-bottom: 5px; color: #1e40af;">Primera Clase</h3>
                 <div class="seat-map" style="grid-template-columns: repeat(4, 1fr); max-width: 400px; margin: 1rem auto;">
                     <div th:each="a : ${asientosPrimera}" 
                          class="seat" 
                          th:classappend="${a.estado == 'DISPONIBLE' ? 'available' : (a.estado == 'RESERVADO' ? 'reserved' : 'occupied')}"
                          th:text="${a.numero}"
-                         th:onclick="${a.estado == 'DISPONIBLE'} ? 'toggleSeat(this, ' + ${a.id} + ')' : ''">
+                         th:attr="data-seat-id=${a.id}"
+                         data-seat-class="PRIMERA"
+                         th:onclick="${a.estado == 'DISPONIBLE'} ? 'toggleSeat(this)' : ''">
                     </div>
                 </div>
             </div>
+            <div th:if="${dispPrimera == 0}" class="alert error" style="margin-top: 1rem;">
+                Primera Clase agotada: no se pueden seleccionar asientos.
+            </div>
 
-            <div th:if="${not #lists.isEmpty(asientosEconomy)}">
+            <div th:if="${dispEconomy > 0 and not #lists.isEmpty(asientosEconomy)}">
                 <h3 style="margin-top: 2rem; border-bottom: 2px solid #64748b; padding-bottom: 5px; color: #334155;">Clase Economy</h3>
                 <div class="seat-map" style="max-width: 600px; margin: 1rem auto;">
                     <div th:each="a : ${asientosEconomy}" 
                          class="seat" 
                          th:classappend="${a.estado == 'DISPONIBLE' ? 'available' : (a.estado == 'RESERVADO' ? 'reserved' : 'occupied')}"
                          th:text="${a.numero}"
-                         th:onclick="${a.estado == 'DISPONIBLE'} ? 'toggleSeat(this, ' + ${a.id} + ')' : ''">
+                         th:attr="data-seat-id=${a.id}"
+                         data-seat-class="ECONOMY"
+                         th:onclick="${a.estado == 'DISPONIBLE'} ? 'toggleSeat(this)' : ''">
                     </div>
                 </div>
             </div>
+            <div th:if="${dispEconomy == 0}" class="alert error" style="margin-top: 1rem;">
+                Economy agotada: no se pueden seleccionar asientos.
+            </div>
 
             <div id="selectedSeatsInputs"></div>
+            <input type="hidden" name="claseSeleccionada" id="selectedClassInput" />
             <div style="margin-top: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0;">
                 <div>
                     <strong style="font-size: 1.2rem; color: #2d6cdf;"><span id="seatCount">0</span></strong> asientos seleccionados
@@ -127,20 +155,61 @@
 
 <script>
     let selectedIds = new Set();
+    let selectedClass = null;
 
-    function toggleSeat(element, id) {
+    function selectClass(clase) {
+        if (selectedIds.size > 0 && selectedClass !== clase) {
+            alert("Ya seleccionaste asientos de " + readableClass(selectedClass) + ". Para cambiar de clase, desmarcá primero esos asientos.");
+            return;
+        }
+        selectedClass = clase;
+        updateClassUi();
+        updateForm();
+    }
+
+    function toggleSeat(element) {
+        const id = Number(element.dataset.seatId);
+        const clase = (element.dataset.seatClass || '').replace(/['"]/g, '').toUpperCase();
+        if (selectedClass && selectedClass !== clase) {
+            alert("Solo podés seleccionar asientos de " + readableClass(selectedClass) + " en esta operación.");
+            return;
+        }
+
         if (selectedIds.has(id)) {
             selectedIds.delete(id);
             element.classList.remove('selected');
+            if (selectedIds.size === 0) {
+                selectedClass = null;
+            }
         } else {
             if (selectedIds.size >= 9) {
                 alert("No puedes seleccionar más de 9 asientos.");
                 return;
             }
+            if (!selectedClass) {
+                selectedClass = clase;
+            }
             selectedIds.add(id);
             element.classList.add('selected');
         }
+        updateClassUi();
         updateForm();
+    }
+
+    function readableClass(clase) {
+        return clase === 'PRIMERA' ? 'Primera Clase' : 'Economy';
+    }
+
+    function updateClassUi() {
+        const btnPrimera = document.getElementById('btnPrimera');
+        const btnEconomy = document.getElementById('btnEconomy');
+        if (btnPrimera) {
+            btnPrimera.classList.toggle('active', selectedClass === 'PRIMERA');
+        }
+        if (btnEconomy) {
+            btnEconomy.classList.toggle('active', selectedClass === 'ECONOMY');
+        }
+        document.getElementById('selectedClassLabel').innerText = selectedClass ? readableClass(selectedClass) : 'Ninguna';
     }
 
     function updateForm() {
@@ -154,6 +223,7 @@
             container.appendChild(input);
         });
         document.getElementById('seatCount').innerText = selectedIds.size;
+        document.getElementById('selectedClassInput').value = selectedClass || '';
         document.getElementById('btnReservar').disabled = selectedIds.size === 0;
     }
 </script>

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,4 +26,7 @@ public interface AsientoRepository extends JpaRepository<Asiento, Long> {
     List<Asiento> findAllByIdWithLock(@Param("ids") Iterable<Long> ids);
 
     long countByInstanciaVueloIdAndClaseAndEstado(Long instanciaVueloId, String clase, String estado);
+
+    long countByInstanciaVueloIdAndClaseAndEstadoIn(
+            Long instanciaVueloId, String clase, Collection<String> estados);
 }

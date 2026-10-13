@@ -27,6 +27,9 @@
       <div class="card">
         <h1 th:text="${title}">Panel del pasajero</h1>
         <p th:text="${subtitle}">Busqueda, compra y gestion de viajes</p>
+        <div style="margin-top: 1rem;">
+          <a class="btn" th:href="@{${compraPath}}">Buscar vuelos y comprar pasajes</a>
+        </div>
       </div>
 
       <div class="card">

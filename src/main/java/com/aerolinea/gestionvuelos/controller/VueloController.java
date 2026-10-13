@@ -2,19 +2,18 @@ package com.aerolinea.gestionvuelos.controller;
 
 import com.aerolinea.gestionvuelos.model.Asiento;
 import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
-import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
+import jakarta.servlet.http.HttpSession;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import com.aerolinea.gestionvuelos.service.BookingService;
 import com.aerolinea.gestionvuelos.service.FlightService;
+import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Controller
 @RequestMapping("/vuelos")
@@ -63,7 +62,9 @@ public class VueloController {
     public String reservarAsientos(
             @PathVariable Long id,
             @RequestParam("asientoIds") List<Long> asientoIds,
+            @RequestParam(name = "claseSeleccionada", required = false) String claseSeleccionada,
             Authentication authentication,
+            HttpSession session,
             RedirectAttributes ra) {
 
         if (authentication == null) {
@@ -74,9 +75,12 @@ public class VueloController {
             Usuario usuario = usuarioRepo.findByEmailIgnoreCase(authentication.getName())
                     .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-            bookingService.reservarAsientos(usuario.getId(), asientoIds);
+            bookingService.reservarAsientos(
+                    usuario.getId(),
+                    session != null ? session.getId() : null,
+                    asientoIds,
+                    claseSeleccionada);
             ra.addFlashAttribute("success", "Asientos reservados temporalmente. Complete el pago para confirmar.");
-            // En un flujo real, aqui iria a la pantalla de pago (US-11)
             return "redirect:/pasajero";
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());

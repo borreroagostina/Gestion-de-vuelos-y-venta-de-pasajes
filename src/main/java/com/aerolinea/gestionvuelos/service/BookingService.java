@@ -1,10 +1,13 @@
 package com.aerolinea.gestionvuelos.service;
 
 import com.aerolinea.gestionvuelos.model.Asiento;
+import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
+import com.aerolinea.gestionvuelos.model.ReservaAsiento;
 import com.aerolinea.gestionvuelos.model.ReservaTemporal;
+import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.AsientoRepository;
-import com.aerolinea.gestionvuelos.repository.InstanciaVueloRepository;
+import com.aerolinea.gestionvuelos.repository.ReservaAsientoRepository;
 import com.aerolinea.gestionvuelos.repository.ReservaTemporalRepository;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,8 +22,8 @@ import java.util.List;
 public class BookingService {
 
     private final AsientoRepository asientoRepo;
+    private final ReservaAsientoRepository reservaAsientoRepo;
     private final ReservaTemporalRepository reservaRepo;
-    private final InstanciaVueloRepository instanciaRepo;
     private final UsuarioRepository usuarioRepo;
 
     @Value("${app.reserva.expiracion-minutos:10}")
@@ -28,21 +31,30 @@ public class BookingService {
 
     public BookingService(
             AsientoRepository asientoRepo,
+            ReservaAsientoRepository reservaAsientoRepo,
             ReservaTemporalRepository reservaRepo,
-            InstanciaVueloRepository instanciaRepo,
             UsuarioRepository usuarioRepo) {
         this.asientoRepo = asientoRepo;
+        this.reservaAsientoRepo = reservaAsientoRepo;
         this.reservaRepo = reservaRepo;
-        this.instanciaRepo = instanciaRepo;
         this.usuarioRepo = usuarioRepo;
     }
 
+    @Transactional
     public List<Asiento> listarAsientosDeInstancia(Long instanciaId) {
+        liberarReservasExpiradasEn(LocalDateTime.now());
         return asientoRepo.findByInstanciaVueloIdOrderByNumeroAsc(instanciaId);
     }
 
     @Transactional
-    public ReservaTemporal reservarAsientos(Long usuarioId, List<Long> asientoIds) {
+    public ReservaTemporal reservarAsientos(Long usuarioId, String sesionId, List<Long> asientoIds) {
+        return reservarAsientos(usuarioId, sesionId, asientoIds, null);
+    }
+
+    @Transactional
+    public ReservaTemporal reservarAsientos(
+            Long usuarioId, String sesionId, List<Long> asientoIds, String claseSeleccionada) {
+        liberarReservasExpiradasEn(LocalDateTime.now());
         if (asientoIds == null || asientoIds.isEmpty()) {
             throw new IllegalArgumentException("Debe seleccionar al menos un asiento");
         }
@@ -56,10 +68,24 @@ public class BookingService {
             throw new IllegalArgumentException("Algunos asientos seleccionados no existen");
         }
 
+        String claseOperacion = asientos.get(0).getClase();
         for (Asiento a : asientos) {
-            if (!"DISPONIBLE".equals(a.getEstado())) {
-                throw new IllegalStateException("El asiento " + a.getNumero() + " ya no esta disponible");
+            if (!claseOperacion.equals(a.getClase())) {
+                throw new IllegalArgumentException(
+                        "Debe seleccionar asientos de una sola clase por operación");
             }
+            if (!"DISPONIBLE".equals(a.getEstado())) {
+                throw new IllegalStateException(
+                        "El asiento "
+                                + a.getNumero()
+                                + " acaba de ser tomado por otro usuario. Elegi otro.");
+            }
+        }
+        String claseSeleccionadaNormalizada = normalizarClase(claseSeleccionada);
+        if (esClaseValida(claseSeleccionadaNormalizada)
+                && !claseOperacion.equalsIgnoreCase(claseSeleccionadaNormalizada)) {
+            throw new IllegalArgumentException(
+                    "La clase seleccionada no coincide con los asientos elegidos");
         }
 
         Usuario usuario = usuarioRepo.findById(usuarioId)
@@ -67,34 +93,93 @@ public class BookingService {
 
         ReservaTemporal reserva = new ReservaTemporal();
         reserva.setUsuario(usuario);
+        reserva.setSesionId(sesionId);
         reserva.setFechaExpiracion(LocalDateTime.now().plusMinutes(expiracionMinutos));
+        ReservaTemporal reservaGuardada = reservaRepo.save(reserva);
 
+        LocalDateTime fechaExpiracion = reservaGuardada.getFechaExpiracion();
+        List<ReservaAsiento> reservasAsiento = new java.util.ArrayList<>();
         for (Asiento a : asientos) {
             a.setEstado("RESERVADO");
-            reserva.getAsientos().add(a);
+            reservaGuardada.getAsientos().add(a);
+            ReservaAsiento reservaAsiento = new ReservaAsiento();
+            reservaAsiento.setReservaTemporal(reservaGuardada);
+            reservaAsiento.setUsuario(usuario);
+            reservaAsiento.setSesionId(sesionId);
+            reservaAsiento.setAsiento(a);
+            reservaAsiento.setEstado(EstadoReservaAsiento.RESERVADO_TEMPORAL);
+            reservaAsiento.setFechaExpiracion(fechaExpiracion);
+            reservasAsiento.add(reservaAsiento);
         }
 
+        reservaAsientoRepo.saveAll(reservasAsiento);
         asientoRepo.saveAll(asientos);
-        return reservaRepo.save(reserva);
+        return reservaRepo.save(reservaGuardada);
     }
 
     @Scheduled(fixedRateString = "${app.reserva.job-rate-ms:60000}")
     @Transactional
     public void liberarReservasExpiradas() {
         LocalDateTime ahora = LocalDateTime.now();
-        List<ReservaTemporal> expiradas = reservaRepo.findByFechaExpiracionBefore(ahora);
-        for (ReservaTemporal r : expiradas) {
-            for (Asiento a : r.getAsientos()) {
-                if ("RESERVADO".equals(a.getEstado())) {
-                    a.setEstado("DISPONIBLE");
-                    asientoRepo.save(a);
-                }
+        liberarReservasExpiradasEn(ahora);
+    }
+
+    @Transactional
+    public long contarDisponibles(Long instanciaId, String clase) {
+        liberarReservasExpiradasEn(LocalDateTime.now());
+        List<Asiento> asientosClase = asientoRepo.findByInstanciaVueloIdOrderByNumeroAsc(instanciaId).stream()
+                .filter(asiento -> clase.equals(asiento.getClase()))
+                .toList();
+        if (asientosClase.isEmpty()) {
+            return 0;
+        }
+
+        InstanciaVuelo instancia = asientosClase.get(0).getInstanciaVuelo();
+        int capacidad = "PRIMERA".equals(clase)
+                ? instancia.getVueloProgramado().getAeronave().getPrimeraClaseSeats()
+                : instancia.getVueloProgramado().getAeronave().getEconomySeats();
+
+        long reservadosTemporales = reservaAsientoRepo.countByInstanciaAndClaseAndEstadoActivo(
+                instanciaId, clase, EstadoReservaAsiento.RESERVADO_TEMPORAL, LocalDateTime.now());
+        long vendidos = asientoRepo.countByInstanciaVueloIdAndClaseAndEstadoIn(
+                instanciaId, clase, java.util.List.of("OCUPADO", "VENDIDO"));
+        long disponibles = (long) capacidad - reservadosTemporales - vendidos;
+        return Math.max(disponibles, 0L);
+    }
+
+    private void liberarReserva(ReservaTemporal reserva) {
+        List<ReservaAsiento> detalle = reservaAsientoRepo.findByReservaTemporalId(reserva.getId());
+        for (ReservaAsiento item : detalle) {
+            if (item.getEstado() == EstadoReservaAsiento.RESERVADO_TEMPORAL) {
+                item.setEstado(EstadoReservaAsiento.LIBERADO);
             }
-            reservaRepo.delete(r);
+        }
+        reservaAsientoRepo.saveAll(detalle);
+
+        for (Asiento a : reserva.getAsientos()) {
+            if ("RESERVADO".equals(a.getEstado())) {
+                a.setEstado("DISPONIBLE");
+                asientoRepo.save(a);
+            }
         }
     }
 
-    public long contarDisponibles(Long instanciaId, String clase) {
-        return asientoRepo.countByInstanciaVueloIdAndClaseAndEstado(instanciaId, clase, "DISPONIBLE");
+    private void liberarReservasExpiradasEn(LocalDateTime ahora) {
+        List<ReservaTemporal> expiradas = reservaRepo.findByFechaExpiracionBefore(ahora);
+        for (ReservaTemporal r : expiradas) {
+            liberarReserva(r);
+        }
     }
+
+    private String normalizarClase(String claseSeleccionada) {
+        if (claseSeleccionada == null) {
+            return "";
+        }
+        return claseSeleccionada.replace("'", "").replace("\"", "").trim().toUpperCase();
+    }
+
+    private boolean esClaseValida(String clase) {
+        return "ECONOMY".equals(clase) || "PRIMERA".equals(clase);
+    }
+
 }

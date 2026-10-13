@@ -8,14 +8,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class MockNotificationService implements NotificationService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MockNotificationService.class);
+  private static final Logger logger = LoggerFactory.getLogger(MockNotificationService.class);
 
-    @Override
-    public void notificarCancelacionVuelo(InstanciaVuelo instancia, String motivo) {
-        logger.info("[MOCK NOTIFICATION] Notificando a pasajeros del vuelo {} ({}) sobre la cancelacion: {}",
-                instancia.getVueloProgramado().getCodigoVuelo(),
-                instancia.getFechaSalida(),
-                motivo);
-        // US-19: Integrar con el sistema real de notificaciones
-    }
+  @Override
+  public void notificarCancelacionVuelo(InstanciaVuelo instancia, String motivo) {
+    logger.info(
+        "[MOCK NOTIFICATION] Notificando a pasajeros del vuelo {} ({}) sobre la cancelacion: {}",
+        instancia.getVueloProgramado().getCodigoVuelo(),
+        instancia.getFechaSalida(),
+        motivo);
+    // US-19: Integrar con el sistema real de notificaciones
+  }
 }

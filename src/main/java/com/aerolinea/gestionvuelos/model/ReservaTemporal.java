@@ -1,6 +1,16 @@
 package com.aerolinea.gestionvuelos.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -9,71 +19,70 @@ import java.util.Set;
 @Table(name = "reservas_temporales")
 public class ReservaTemporal {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "usuario_id", nullable = false)
+  private Usuario usuario;
 
-    @Column(nullable = false)
-    private LocalDateTime fechaExpiracion;
+  @Column(nullable = false)
+  private LocalDateTime fechaExpiracion;
 
-    @Column(name = "sesion_id", length = 100)
-    private String sesionId;
+  @Column(name = "sesion_id", length = 100)
+  private String sesionId;
 
-    @ManyToMany
-    @JoinTable(
-        name = "reserva_asientos",
-        joinColumns = @JoinColumn(name = "reserva_id"),
-        inverseJoinColumns = @JoinColumn(name = "asiento_id")
-    )
-    private Set<Asiento> asientos = new HashSet<>();
+  @ManyToMany
+  @JoinTable(
+      name = "reserva_asientos",
+      joinColumns = @JoinColumn(name = "reserva_id"),
+      inverseJoinColumns = @JoinColumn(name = "asiento_id"))
+  private Set<Asiento> asientos = new HashSet<>();
 
-    public ReservaTemporal() {}
+  public ReservaTemporal() {}
 
-    public Long getId() {
-        return id;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+  public void setId(Long id) {
+    this.id = id;
+  }
 
-    public Usuario getUsuario() {
-        return usuario;
-    }
+  public Usuario getUsuario() {
+    return usuario;
+  }
 
-    public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
-    }
+  public void setUsuario(Usuario usuario) {
+    this.usuario = usuario;
+  }
 
-    public LocalDateTime getFechaExpiracion() {
-        return fechaExpiracion;
-    }
+  public LocalDateTime getFechaExpiracion() {
+    return fechaExpiracion;
+  }
 
-    public void setFechaExpiracion(LocalDateTime fechaExpiracion) {
-        this.fechaExpiracion = fechaExpiracion;
-    }
+  public void setFechaExpiracion(LocalDateTime fechaExpiracion) {
+    this.fechaExpiracion = fechaExpiracion;
+  }
 
-    public String getSesionId() {
-        return sesionId;
-    }
+  public String getSesionId() {
+    return sesionId;
+  }
 
-    public void setSesionId(String sesionId) {
-        this.sesionId = sesionId;
-    }
+  public void setSesionId(String sesionId) {
+    this.sesionId = sesionId;
+  }
 
-    public Set<Asiento> getAsientos() {
-        return asientos;
-    }
+  public Set<Asiento> getAsientos() {
+    return asientos;
+  }
 
-    public void setAsientos(Set<Asiento> asientos) {
-        this.asientos = asientos;
-    }
+  public void setAsientos(Set<Asiento> asientos) {
+    this.asientos = asientos;
+  }
 
-    public boolean estaExpirada() {
-        return LocalDateTime.now().isAfter(fechaExpiracion);
-    }
+  public boolean estaExpirada() {
+    return LocalDateTime.now().isAfter(fechaExpiracion);
+  }
 }

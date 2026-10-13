@@ -22,188 +22,184 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Gestion administrativa para alta y edicion de vuelos (US-05, US-06).
- */
+/** Gestion administrativa para alta y edicion de vuelos (US-05, US-06). */
 @Controller
 @RequestMapping("/admin/vuelos")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminFlightController {
 
-    private final FlightService flightService;
-    private final CatalogService catalogService;
+  private final FlightService flightService;
+  private final CatalogService catalogService;
 
-    public AdminFlightController(
-            final FlightService flightService, final CatalogService catalogService) {
-        this.flightService = flightService;
-        this.catalogService = catalogService;
+  public AdminFlightController(
+      final FlightService flightService, final CatalogService catalogService) {
+    this.flightService = flightService;
+    this.catalogService = catalogService;
+  }
+
+  @GetMapping
+  public String listarVuelos(
+      final Model model,
+      @RequestParam(required = false) final Long origenId,
+      @RequestParam(required = false) final Long destinoId,
+      @RequestParam(required = false) final String fechaDesde,
+      @RequestParam(required = false) final String fechaHasta) {
+
+    LocalDate desde = null;
+    LocalDate hasta = null;
+
+    if (fechaDesde != null && !fechaDesde.isBlank()) {
+      desde = LocalDate.parse(fechaDesde);
+    }
+    if (fechaHasta != null && !fechaHasta.isBlank()) {
+      hasta = LocalDate.parse(fechaHasta);
     }
 
-    @GetMapping
-    public String listarVuelos(
-            final Model model,
-            @RequestParam(required = false) final Long origenId,
-            @RequestParam(required = false) final Long destinoId,
-            @RequestParam(required = false) final String fechaDesde,
-            @RequestParam(required = false) final String fechaHasta) {
+    model.addAttribute(
+        "vuelos", flightService.filtrarVuelosAdmin(origenId, destinoId, desde, hasta));
+    model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
+    model.addAttribute("origenId", origenId);
+    model.addAttribute("destinoId", destinoId);
+    model.addAttribute("fechaDesde", fechaDesde);
+    model.addAttribute("fechaHasta", fechaHasta);
 
-        LocalDate desde = null;
-        LocalDate hasta = null;
+    return "admin/vuelos";
+  }
 
-        if (fechaDesde != null && !fechaDesde.isBlank()) {
-            desde = LocalDate.parse(fechaDesde);
-        }
-        if (fechaHasta != null && !fechaHasta.isBlank()) {
-            hasta = LocalDate.parse(fechaHasta);
-        }
+  @GetMapping("/nuevo")
+  public String formularioNuevoVuelo(final Model model) {
+    cargarAtributosFormulario(model);
+    model.addAttribute("vueloForm", new VueloForm());
+    model.addAttribute("esEdicion", Boolean.FALSE);
+    return "admin/vuelo-form";
+  }
 
-        model.addAttribute(
-                "vuelos", flightService.filtrarVuelosAdmin(origenId, destinoId, desde, hasta));
-        model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-        model.addAttribute("origenId", origenId);
-        model.addAttribute("destinoId", destinoId);
-        model.addAttribute("fechaDesde", fechaDesde);
-        model.addAttribute("fechaHasta", fechaHasta);
+  @PostMapping("/guardar")
+  public String guardarVuelo(
+      @Valid @ModelAttribute("vueloForm") final VueloForm form,
+      final BindingResult result,
+      final Model model,
+      final RedirectAttributes ra) {
 
-        return "admin/vuelos";
+    final boolean esEdicion = form.getId() != null && form.getId() > 0;
+
+    if (result.hasErrors()) {
+      cargarAtributosFormulario(model);
+      model.addAttribute("esEdicion", esEdicion);
+      return "admin/vuelo-form";
     }
 
-    @GetMapping("/nuevo")
-    public String formularioNuevoVuelo(final Model model) {
-        cargarAtributosFormulario(model);
-        model.addAttribute("vueloForm", new VueloForm());
-        model.addAttribute("esEdicion", Boolean.FALSE);
-        return "admin/vuelo-form";
+    try {
+      final VueloProgramado vuelo = convertirFormAEntidad(form);
+      if (esEdicion) {
+        vuelo.setId(form.getId());
+        flightService.modificarVuelo(vuelo);
+        ra.addFlashAttribute("success", "Vuelo actualizado en instancias futuras.");
+      } else {
+        vuelo.setId(null);
+        flightService.crearVuelo(vuelo);
+        ra.addFlashAttribute("success", "Vuelo e instancias generados correctamente.");
+      }
+      return "redirect:/admin/vuelos";
+    } catch (final Exception e) {
+      cargarAtributosFormulario(model);
+      model.addAttribute("error", e.getMessage());
+      model.addAttribute("esEdicion", esEdicion);
+      return "admin/vuelo-form";
+    }
+  }
+
+  @GetMapping("/{id}/editar")
+  public String formularioEditarVuelo(@PathVariable final Long id, final Model model) {
+    final VueloProgramado vuelo = flightService.obtenerVuelo(id);
+    if (vuelo == null) {
+      return "redirect:/admin/vuelos";
+    }
+    cargarAtributosFormulario(model);
+
+    final VueloForm form = new VueloForm();
+    form.setId(vuelo.getId());
+    form.setCodigoVuelo(vuelo.getCodigoVuelo());
+    form.setOrigenId(vuelo.getOrigen().getId());
+    form.setDestinoId(vuelo.getDestino().getId());
+    form.setAeronaveId(vuelo.getAeronave().getId());
+    form.setHoraSalida(vuelo.getHoraSalida());
+    form.setHoraLlegada(vuelo.getHoraLlegada());
+    form.setFechaInicioVenta(vuelo.getFechaInicioVenta());
+    form.setFechaFinVenta(vuelo.getFechaFinVenta());
+    form.setPrecioEconomy(vuelo.getPrecioEconomy());
+    form.setPrecioPrimera(vuelo.getPrecioPrimera());
+
+    if (vuelo.getDiasSemana() != null && !vuelo.getDiasSemana().isBlank()) {
+      form.setDiasSeleccionados(Arrays.asList(vuelo.getDiasSemana().split(",")));
     }
 
-    @PostMapping("/guardar")
-    public String guardarVuelo(
-            @Valid @ModelAttribute("vueloForm") final VueloForm form,
-            final BindingResult result,
-            final Model model,
-            final RedirectAttributes ra) {
+    model.addAttribute("vueloForm", form);
+    model.addAttribute("esEdicion", Boolean.TRUE);
+    return "admin/vuelo-form";
+  }
 
-        final boolean esEdicion = form.getId() != null && form.getId() > 0;
-
-        if (result.hasErrors()) {
-            cargarAtributosFormulario(model);
-            model.addAttribute("esEdicion", esEdicion);
-            return "admin/vuelo-form";
-        }
-
-        try {
-            final VueloProgramado vuelo = convertirFormAEntidad(form);
-            if (esEdicion) {
-                vuelo.setId(form.getId());
-                flightService.modificarVuelo(vuelo);
-                ra.addFlashAttribute("success", "Vuelo actualizado en instancias futuras.");
-            } else {
-                vuelo.setId(null);
-                flightService.crearVuelo(vuelo);
-                ra.addFlashAttribute("success", "Vuelo e instancias generados correctamente.");
-            }
-            return "redirect:/admin/vuelos";
-        } catch (final Exception e) {
-            cargarAtributosFormulario(model);
-            model.addAttribute("error", e.getMessage());
-            model.addAttribute("esEdicion", esEdicion);
-            return "admin/vuelo-form";
-        }
+  @GetMapping("/{id}/instancias")
+  public String listarInstancias(@PathVariable final Long id, final Model model) {
+    final VueloProgramado vuelo = flightService.obtenerVuelo(id);
+    if (vuelo == null) {
+      return "redirect:/admin/vuelos";
     }
+    model.addAttribute("vuelo", vuelo);
+    model.addAttribute("instancias", flightService.listarInstanciasDeVuelo(vuelo.getId()));
+    return "admin/instancias";
+  }
 
-    @GetMapping("/{id}/editar")
-    public String formularioEditarVuelo(@PathVariable final Long id, final Model model) {
-        final VueloProgramado vuelo = flightService.obtenerVuelo(id);
-        if (vuelo == null) {
-            return "redirect:/admin/vuelos";
-        }
-        cargarAtributosFormulario(model);
-
-        final VueloForm form = new VueloForm();
-        form.setId(vuelo.getId());
-        form.setCodigoVuelo(vuelo.getCodigoVuelo());
-        form.setOrigenId(vuelo.getOrigen().getId());
-        form.setDestinoId(vuelo.getDestino().getId());
-        form.setAeronaveId(vuelo.getAeronave().getId());
-        form.setHoraSalida(vuelo.getHoraSalida());
-        form.setHoraLlegada(vuelo.getHoraLlegada());
-        form.setFechaInicioVenta(vuelo.getFechaInicioVenta());
-        form.setFechaFinVenta(vuelo.getFechaFinVenta());
-        form.setPrecioEconomy(vuelo.getPrecioEconomy());
-        form.setPrecioPrimera(vuelo.getPrecioPrimera());
-
-        if (vuelo.getDiasSemana() != null && !vuelo.getDiasSemana().isBlank()) {
-            form.setDiasSeleccionados(Arrays.asList(vuelo.getDiasSemana().split(",")));
-        }
-
-        model.addAttribute("vueloForm", form);
-        model.addAttribute("esEdicion", Boolean.TRUE);
-        return "admin/vuelo-form";
+  @PostMapping("/{id}/cancelar")
+  public String cancelarVueloProgramado(
+      @PathVariable final Long id, @RequestParam final String motivo, final RedirectAttributes ra) {
+    try {
+      flightService.cancelarVueloProgramado(id, motivo);
+      ra.addFlashAttribute("success", "Toda la programacion del vuelo ha sido cancelada.");
+    } catch (final Exception e) {
+      ra.addFlashAttribute("error", e.getMessage());
     }
+    return "redirect:/admin/vuelos";
+  }
 
-    @GetMapping("/{id}/instancias")
-    public String listarInstancias(@PathVariable final Long id, final Model model) {
-        final VueloProgramado vuelo = flightService.obtenerVuelo(id);
-        if (vuelo == null) {
-            return "redirect:/admin/vuelos";
-        }
-        model.addAttribute("vuelo", vuelo);
-        model.addAttribute("instancias", flightService.listarInstanciasDeVuelo(vuelo.getId()));
-        return "admin/instancias";
+  @PostMapping("/instancia/{id}/cancelar")
+  public String cancelarInstanciaPuntual(
+      @PathVariable final Long id,
+      @RequestParam final Long vueloId,
+      @RequestParam final String motivo,
+      final RedirectAttributes ra) {
+    try {
+      flightService.cancelarInstanciaVuelo(id, motivo);
+      ra.addFlashAttribute("success", "La fecha puntual del vuelo ha sido cancelada.");
+    } catch (final Exception e) {
+      ra.addFlashAttribute("error", e.getMessage());
     }
+    return "redirect:/admin/vuelos/" + vueloId + "/instancias";
+  }
 
-    @PostMapping("/{id}/cancelar")
-    public String cancelarVueloProgramado(
-            @PathVariable final Long id,
-            @RequestParam final String motivo,
-            final RedirectAttributes ra) {
-        try {
-            flightService.cancelarVueloProgramado(id, motivo);
-            ra.addFlashAttribute("success", "Toda la programacion del vuelo ha sido cancelada.");
-        } catch (final Exception e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/admin/vuelos";
-    }
+  private void cargarAtributosFormulario(final Model model) {
+    model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
+    model.addAttribute("aeronaves", catalogService.listarAeronaves());
+    model.addAttribute("todosLosDias", DiaSemana.values());
+  }
 
-    @PostMapping("/instancia/{id}/cancelar")
-    public String cancelarInstanciaPuntual(
-            @PathVariable final Long id,
-            @RequestParam final Long vueloId,
-            @RequestParam final String motivo,
-            final RedirectAttributes ra) {
-        try {
-            flightService.cancelarInstanciaVuelo(id, motivo);
-            ra.addFlashAttribute("success", "La fecha puntual del vuelo ha sido cancelada.");
-        } catch (final Exception e) {
-            ra.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/admin/vuelos/" + vueloId + "/instancias";
-    }
+  private VueloProgramado convertirFormAEntidad(final VueloForm form) {
+    final Aeropuerto origen = catalogService.obtenerAeropuerto(form.getOrigenId());
+    final Aeropuerto destino = catalogService.obtenerAeropuerto(form.getDestinoId());
+    final Aeronave aeronave = catalogService.obtenerAeronave(form.getAeronaveId());
 
-    private void cargarAtributosFormulario(final Model model) {
-        model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
-        model.addAttribute("aeronaves", catalogService.listarAeronaves());
-        model.addAttribute("todosLosDias", DiaSemana.values());
-    }
-
-    private VueloProgramado convertirFormAEntidad(final VueloForm form) {
-        final Aeropuerto origen = catalogService.obtenerAeropuerto(form.getOrigenId());
-        final Aeropuerto destino = catalogService.obtenerAeropuerto(form.getDestinoId());
-        final Aeronave aeronave = catalogService.obtenerAeronave(form.getAeronaveId());
-
-        final VueloProgramado v = new VueloProgramado();
-        v.setCodigoVuelo(form.getCodigoVuelo());
-        v.setOrigen(origen);
-        v.setDestino(destino);
-        v.setAeronave(aeronave);
-        v.setHoraSalida(form.getHoraSalida());
-        v.setHoraLlegada(form.getHoraLlegada());
-        v.setFechaInicioVenta(form.getFechaInicioVenta());
-        v.setFechaFinVenta(form.getFechaFinVenta());
-        v.setPrecioEconomy(form.getPrecioEconomy());
-        v.setPrecioPrimera(form.getPrecioPrimera());
-        v.setDiasSemana(String.join(",", form.getDiasSeleccionados()));
-        return v;
-    }
+    final VueloProgramado v = new VueloProgramado();
+    v.setCodigoVuelo(form.getCodigoVuelo());
+    v.setOrigen(origen);
+    v.setDestino(destino);
+    v.setAeronave(aeronave);
+    v.setHoraSalida(form.getHoraSalida());
+    v.setHoraLlegada(form.getHoraLlegada());
+    v.setFechaInicioVenta(form.getFechaInicioVenta());
+    v.setFechaFinVenta(form.getFechaFinVenta());
+    v.setPrecioEconomy(form.getPrecioEconomy());
+    v.setPrecioPrimera(form.getPrecioPrimera());
+    v.setDiasSemana(String.join(",", form.getDiasSeleccionados()));
+    return v;
+  }
 }

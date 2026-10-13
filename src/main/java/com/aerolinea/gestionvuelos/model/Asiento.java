@@ -1,67 +1,77 @@
 package com.aerolinea.gestionvuelos.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "asientos")
 public class Asiento {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  private static final int CLASE_ESTADO_LENGTH = 20;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "instancia_vuelo_id", nullable = false)
-    private InstanciaVuelo instanciaVuelo;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, length = 10)
-    private String numero;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "instancia_vuelo_id", nullable = false)
+  private InstanciaVuelo instanciaVuelo;
 
-    @Column(nullable = false, length = 20)
-    private String clase; // ECONOMY, PRIMERA
+  @Column(nullable = false, length = 10)
+  private String numero;
 
-    @Column(nullable = false, length = 20)
-    private String estado = "DISPONIBLE"; // DISPONIBLE, RESERVADO, OCUPADO
+  @Column(nullable = false, length = CLASE_ESTADO_LENGTH)
+  private String clase; // ECONOMY, PRIMERA
 
-    public Asiento() {}
+  @Column(nullable = false, length = CLASE_ESTADO_LENGTH)
+  private String estado = "DISPONIBLE"; // DISPONIBLE, RESERVADO, OCUPADO
 
-    public Long getId() {
-        return id;
-    }
+  public Asiento() {}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public InstanciaVuelo getInstanciaVuelo() {
-        return instanciaVuelo;
-    }
+  public void setId(Long id) {
+    this.id = id;
+  }
 
-    public void setInstanciaVuelo(InstanciaVuelo instanciaVuelo) {
-        this.instanciaVuelo = instanciaVuelo;
-    }
+  public InstanciaVuelo getInstanciaVuelo() {
+    return instanciaVuelo;
+  }
 
-    public String getNumero() {
-        return numero;
-    }
+  public void setInstanciaVuelo(InstanciaVuelo instanciaVuelo) {
+    this.instanciaVuelo = instanciaVuelo;
+  }
 
-    public void setNumero(String numero) {
-        this.numero = numero;
-    }
+  public String getNumero() {
+    return numero;
+  }
 
-    public String getClase() {
-        return clase;
-    }
+  public void setNumero(String numero) {
+    this.numero = numero;
+  }
 
-    public void setClase(String clase) {
-        this.clase = clase;
-    }
+  public String getClase() {
+    return clase;
+  }
 
-    public String getEstado() {
-        return estado;
-    }
+  public void setClase(String clase) {
+    this.clase = clase;
+  }
 
-    public void setEstado(String estado) {
-        this.estado = estado;
-    }
+  public String getEstado() {
+    return estado;
+  }
+
+  public void setEstado(String estado) {
+    this.estado = estado;
+  }
 }

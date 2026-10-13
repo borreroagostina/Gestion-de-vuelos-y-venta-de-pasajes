@@ -5,7 +5,6 @@
 /target/
 /out/
 /.mvn/wrapper/*.jar
-/.mvn/wrapper/*.properties
 /.env
 .env
 !.env

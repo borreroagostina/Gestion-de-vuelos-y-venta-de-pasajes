@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * Controlador principal para portada, busqueda publica de vuelos (US-08)
- * y redireccion inicial segun rol autenticado (US-04).
+ * Controlador principal para portada, busqueda publica de vuelos (US-08) y redireccion inicial
+ * segun rol autenticado (US-04).
  */
 @Controller
 public class HomeController {
@@ -29,28 +29,26 @@ public class HomeController {
 
   @Autowired
   public HomeController(
-          @Autowired(required = false) final FlightService flightService,
-          @Autowired(required = false) final CatalogService catalogService) {
+      @Autowired(required = false) final FlightService flightService,
+      @Autowired(required = false) final CatalogService catalogService) {
     this.flightService = flightService;
     this.catalogService = catalogService;
   }
 
-  /**
-   * Portada publica y buscador de vuelos accesible sin login (US-08).
-   */
+  /** Portada publica y buscador de vuelos accesible sin login (US-08). */
   @GetMapping("/")
   public String home(
-          final Model model,
-          @RequestParam(required = false) final Long origenId,
-          @RequestParam(required = false) final Long destinoId,
-          @RequestParam(required = false) final String fechaSalida,
-          @RequestParam(required = false) final String fechaHasta,
-          @RequestParam(defaultValue = "HORA_ASC") final String orden,
-          @RequestParam(defaultValue = "0") final int page) {
+      final Model model,
+      @RequestParam(required = false) final Long origenId,
+      @RequestParam(required = false) final Long destinoId,
+      @RequestParam(required = false) final String fechaSalida,
+      @RequestParam(required = false) final String fechaHasta,
+      @RequestParam(defaultValue = "HORA_ASC") final String orden,
+      @RequestParam(defaultValue = "0") final int page) {
 
     model.addAttribute("title", "Gestion de Vuelos");
     model.addAttribute(
-            "message", "Ingresá con tu cuenta para acceder al inicio correspondiente a tu rol.");
+        "message", "Ingresá con tu cuenta para acceder al inicio correspondiente a tu rol.");
 
     if (catalogService != null) {
       model.addAttribute("aeropuertos", catalogService.listarAeropuertos());
@@ -65,23 +63,23 @@ public class HomeController {
     model.addAttribute("orden", orden);
 
     if (flightService != null
-            && origenId != null
-            && destinoId != null
-            && fechaSalida != null
-            && !fechaSalida.isBlank()) {
+        && origenId != null
+        && destinoId != null
+        && fechaSalida != null
+        && !fechaSalida.isBlank()) {
       try {
         final LocalDate salida = LocalDate.parse(fechaSalida);
         final LocalDate hasta =
-                (fechaHasta != null && !fechaHasta.isBlank()) ? LocalDate.parse(fechaHasta) : salida;
+            (fechaHasta != null && !fechaHasta.isBlank()) ? LocalDate.parse(fechaHasta) : salida;
 
         final Page<InstanciaVuelo> resultados =
-                flightService.buscarVuelosPublicos(
-                        origenId,
-                        destinoId,
-                        salida,
-                        hasta,
-                        orden,
-                        PageRequest.of(Math.max(0, page), RESULT_PAGE_SIZE));
+            flightService.buscarVuelosPublicos(
+                origenId,
+                destinoId,
+                salida,
+                hasta,
+                orden,
+                PageRequest.of(Math.max(0, page), RESULT_PAGE_SIZE));
 
         model.addAttribute("resultados", resultados.getContent());
         model.addAttribute("totalPages", resultados.getTotalPages());
@@ -94,17 +92,15 @@ public class HomeController {
     return "index";
   }
 
-  /**
-   * Redireccion al panel del usuario autenticado segun su rol (US-04).
-   */
+  /** Redireccion al panel del usuario autenticado segun su rol (US-04). */
   @GetMapping("/inicio")
   public String roleHome(final Authentication authentication) {
     if (authentication == null) {
       return "redirect:/login";
     }
     return RolUsuario.fromAuthorities(authentication.getAuthorities())
-            .map(RolUsuario::getHomePath)
-            .map(path -> "redirect:" + path)
-            .orElse("redirect:/");
+        .map(RolUsuario::getHomePath)
+        .map(path -> "redirect:" + path)
+        .orElse("redirect:/");
   }
 }

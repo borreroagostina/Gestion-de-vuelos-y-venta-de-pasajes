@@ -14,6 +14,8 @@ public interface ReservaAsientoRepository extends JpaRepository<ReservaAsiento, 
 
   List<ReservaAsiento> findByReservaTemporalId(Long reservaTemporalId);
 
+  List<ReservaAsiento> findByReservaTemporalIdOrderByAsientoNumeroAsc(Long reservaTemporalId);
+
   @Query(
       "SELECT COUNT(DISTINCT ra.asiento.id) FROM ReservaAsiento ra "
           + "WHERE ra.asiento.instanciaVuelo.id = :instanciaId "

@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,6 +19,8 @@ import java.time.LocalDateTime;
 public class ReservaAsiento {
 
   private static final int ESTADO_LENGTH = 30;
+  private static final int MAX_PASSENGER_NAME_LENGTH = 100;
+  private static final int MAX_PASSENGER_DOCUMENT_LENGTH = 20;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,6 +47,18 @@ public class ReservaAsiento {
 
   @Column(name = "fecha_expiracion", nullable = false)
   private LocalDateTime fechaExpiracion;
+
+  @Column(name = "nombre_pasajero", length = MAX_PASSENGER_NAME_LENGTH)
+  private String nombrePasajero;
+
+  @Column(name = "apellido_pasajero", length = MAX_PASSENGER_NAME_LENGTH)
+  private String apellidoPasajero;
+
+  @Column(name = "documento_pasajero", length = MAX_PASSENGER_DOCUMENT_LENGTH)
+  private String documentoPasajero;
+
+  @Column(name = "fecha_nacimiento_pasajero")
+  private LocalDate fechaNacimientoPasajero;
 
   public Long getId() {
     return id;
@@ -99,5 +114,47 @@ public class ReservaAsiento {
 
   public void setFechaExpiracion(LocalDateTime fechaExpiracion) {
     this.fechaExpiracion = fechaExpiracion;
+  }
+
+  public String getNombrePasajero() {
+    return nombrePasajero;
+  }
+
+  public void setNombrePasajero(String nombrePasajero) {
+    this.nombrePasajero = nombrePasajero;
+  }
+
+  public String getApellidoPasajero() {
+    return apellidoPasajero;
+  }
+
+  public void setApellidoPasajero(String apellidoPasajero) {
+    this.apellidoPasajero = apellidoPasajero;
+  }
+
+  public String getDocumentoPasajero() {
+    return documentoPasajero;
+  }
+
+  public void setDocumentoPasajero(String documentoPasajero) {
+    this.documentoPasajero = documentoPasajero;
+  }
+
+  public LocalDate getFechaNacimientoPasajero() {
+    return fechaNacimientoPasajero;
+  }
+
+  public void setFechaNacimientoPasajero(LocalDate fechaNacimientoPasajero) {
+    this.fechaNacimientoPasajero = fechaNacimientoPasajero;
+  }
+
+  public boolean tieneDatosPasajeroCompletos() {
+    return nombrePasajero != null
+        && !nombrePasajero.isBlank()
+        && apellidoPasajero != null
+        && !apellidoPasajero.isBlank()
+        && documentoPasajero != null
+        && !documentoPasajero.isBlank()
+        && fechaNacimientoPasajero != null;
   }
 }

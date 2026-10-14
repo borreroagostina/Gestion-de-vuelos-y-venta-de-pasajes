@@ -82,9 +82,7 @@ public class VueloController {
 
       bookingService.reservarAsientos(
           usuario.getId(), session != null ? session.getId() : null, asientoIds, claseSeleccionada);
-      ra.addFlashAttribute(
-          "success", "Asientos reservados temporalmente. Complete el pago para confirmar.");
-      return "redirect:/pasajero";
+      return "redirect:/pasajero/checkout";
     } catch (Exception e) {
       ra.addFlashAttribute("error", e.getMessage());
       return "redirect:/vuelos/" + id;

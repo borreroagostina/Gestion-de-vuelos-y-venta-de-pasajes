@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Datos de pasajeros</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f7fb; }
+      .container { max-width: 1050px; margin: 0 auto; }
+      .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+      .field { display: flex; flex-direction: column; gap: 0.35rem; }
+      .field input { padding: 0.7rem; border: 1px solid #cbd5e1; border-radius: 8px; }
+      .btn { display: inline-block; padding: 0.7rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
+      .btn.secondary { background: #6c757d; }
+      .actions { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: center; }
+      .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+      .error { background: #fee2e2; color: #991b1b; }
+      .info { background: #e0f2fe; color: #0c4a6e; }
+      .field-error { color: #b91c1c; font-size: 0.85rem; }
+      .passenger-title { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+      .summary-inline { display: flex; gap: 1rem; flex-wrap: wrap; color: #334155; font-size: 0.95rem; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="actions" style="margin-bottom: 1rem;">
+        <a class="btn secondary" th:href="@{/pasajero}">← Volver al panel</a>
+        <a class="btn secondary" th:href="@{/}">Buscar otros vuelos</a>
+      </div>
+
+      <div th:if="${error}" class="alert error" th:text="${error}"></div>
+      <div class="card info">
+        <h1>Datos de los pasajeros</h1>
+        <p>Completá un bloque por cada asiento reservado antes de pasar al resumen final.</p>
+        <div class="summary-inline">
+          <span><strong>Clase:</strong> <span th:text="${claseReserva}">Economy</span></span>
+          <span><strong>Asientos:</strong> <span th:text="${#strings.listJoin(asientosReserva, ', ')}">07A, 07B</span></span>
+        </div>
+      </div>
+
+      <form th:action="@{/pasajero/checkout}" th:object="${datosPasajerosForm}" method="post">
+        <div class="card" th:each="pasajero, iter : *{pasajeros}">
+          <div class="passenger-title">
+            <h2 th:text="|Pasajero ${iter.count}|">Pasajero 1</h2>
+            <strong th:text="|Asiento ${pasajero.numeroAsiento}|">Asiento 07A</strong>
+          </div>
+
+          <input type="hidden" th:field="*{pasajeros[__${iter.index}__].reservaAsientoId}" />
+          <input type="hidden" th:field="*{pasajeros[__${iter.index}__].numeroAsiento}" />
+          <input type="hidden" th:field="*{pasajeros[__${iter.index}__].clase}" />
+
+          <div class="grid">
+            <div class="field">
+              <label th:for="|pasajeros${iter.index}.nombre|">Nombre</label>
+              <input
+                  type="text"
+                  th:field="*{pasajeros[__${iter.index}__].nombre}"
+                  maxlength="100"
+                  required />
+              <span class="field-error"
+                    th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].nombre')}"
+                    th:errors="*{pasajeros[__${iter.index}__].nombre}"></span>
+            </div>
+
+            <div class="field">
+              <label th:for="|pasajeros${iter.index}.apellido|">Apellido</label>
+              <input
+                  type="text"
+                  th:field="*{pasajeros[__${iter.index}__].apellido}"
+                  maxlength="100"
+                  required />
+              <span class="field-error"
+                    th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].apellido')}"
+                    th:errors="*{pasajeros[__${iter.index}__].apellido}"></span>
+            </div>
+
+            <div class="field">
+              <label th:for="|pasajeros${iter.index}.documento|">DNI/Pasaporte</label>
+              <input
+                  type="text"
+                  th:field="*{pasajeros[__${iter.index}__].documento}"
+                  maxlength="20"
+                  minlength="6"
+                  pattern="[A-Za-z0-9-]+"
+                  required />
+              <span class="field-error"
+                    th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].documento')}"
+                    th:errors="*{pasajeros[__${iter.index}__].documento}"></span>
+            </div>
+
+            <div class="field">
+              <label th:for="|pasajeros${iter.index}.fechaNacimiento|">Fecha de nacimiento</label>
+              <input
+                  type="date"
+                  th:field="*{pasajeros[__${iter.index}__].fechaNacimiento}"
+                  th:attr="max=${fechaMaxNacimiento}"
+                  required />
+              <span class="field-error"
+                    th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].fechaNacimiento')}"
+                    th:errors="*{pasajeros[__${iter.index}__].fechaNacimiento}"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card actions">
+          <span>El resumen recalculará subtotal, IVA 21% y total con los pasajeros cargados.</span>
+          <button type="submit" class="btn">Ver resumen de compra</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

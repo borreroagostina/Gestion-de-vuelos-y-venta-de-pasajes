@@ -5,6 +5,7 @@ import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import com.aerolinea.gestionvuelos.service.BookingService;
+import com.aerolinea.gestionvuelos.service.FarePolicyService;
 import com.aerolinea.gestionvuelos.service.FlightService;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
@@ -26,12 +27,17 @@ public class VueloController {
   private final FlightService flightService;
   private final BookingService bookingService;
   private final UsuarioRepository usuarioRepo;
+  private final FarePolicyService farePolicyService;
 
   public VueloController(
-      FlightService flightService, BookingService bookingService, UsuarioRepository usuarioRepo) {
+      FlightService flightService,
+      BookingService bookingService,
+      UsuarioRepository usuarioRepo,
+      FarePolicyService farePolicyService) {
     this.flightService = flightService;
     this.bookingService = bookingService;
     this.usuarioRepo = usuarioRepo;
+    this.farePolicyService = farePolicyService;
   }
 
   @GetMapping("/{id}")
@@ -56,6 +62,7 @@ public class VueloController {
     model.addAttribute("asientosPrimera", asientosPrimera);
     model.addAttribute("asientosEconomy", asientosEconomy);
     model.addAttribute("umbralBajaDisp", 5); // Ejemplo: menos de 5 es baja disponibilidad
+    model.addAttribute("politicas", farePolicyService.obtenerPoliticas());
 
     return "vuelo-detalle";
   }
@@ -82,6 +89,8 @@ public class VueloController {
 
       bookingService.reservarAsientos(
           usuario.getId(), session != null ? session.getId() : null, asientoIds, claseSeleccionada);
+      ra.addFlashAttribute(
+          "success", "Asientos reservados temporalmente. Complete el pago para confirmar.");
       return "redirect:/pasajero/checkout";
     } catch (Exception e) {
       ra.addFlashAttribute("error", e.getMessage());

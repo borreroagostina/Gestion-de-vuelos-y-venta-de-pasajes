@@ -1,5 +1,9 @@
 package com.aerolinea.gestionvuelos;
 
+import com.aerolinea.gestionvuelos.dto.FormValidationIssue;
+import com.aerolinea.gestionvuelos.dto.PasajeroViajeForm;
+import com.aerolinea.gestionvuelos.dto.ReservaCheckoutContext;
+import com.aerolinea.gestionvuelos.dto.ResumenCompraDto;
 import com.aerolinea.gestionvuelos.model.Aeronave;
 import com.aerolinea.gestionvuelos.model.Aeropuerto;
 import com.aerolinea.gestionvuelos.model.Asiento;
@@ -18,6 +22,7 @@ import com.aerolinea.gestionvuelos.repository.ReservaTemporalRepository;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import com.aerolinea.gestionvuelos.repository.VueloProgramadoRepository;
 import com.aerolinea.gestionvuelos.service.BookingService;
+import com.aerolinea.gestionvuelos.service.CheckoutService;
 import com.aerolinea.gestionvuelos.service.FlightService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -55,6 +60,8 @@ public class USIntegrationTest {
   @Autowired private FlightService flightService;
 
   @Autowired private BookingService bookingService;
+
+  @Autowired private CheckoutService checkoutService;
 
   @Autowired private VueloProgramadoRepository vueloRepo;
 
@@ -352,5 +359,64 @@ public class USIntegrationTest {
         reservaAsientoRepo.findByReservaTemporalId(reserva.getId()).stream()
             .allMatch(r -> r.getEstado() == EstadoReservaAsiento.LIBERADO);
     Assert.assertTrue(todosLiberados);
+  }
+
+  @Test
+  @Transactional
+  public void testUs11ResumenCompraCalculaSubtotalImpuestosYTotal() {
+    final VueloProgramado v = crearVueloGenerico("US11SUM");
+    final InstanciaVuelo inst = flightService.listarInstanciasDeVuelo(v.getId()).get(0);
+    final List<Long> asientosIds =
+        bookingService.listarAsientosDeInstancia(inst.getId()).stream()
+            .filter(a -> "ECONOMY".equals(a.getClase()))
+            .limit(2)
+            .map(Asiento::getId)
+            .toList();
+    bookingService.reservarAsientos(testUser.getId(), "us11-session", asientosIds, "ECONOMY");
+
+    final ReservaCheckoutContext context =
+        checkoutService
+            .obtenerReservaActiva(testUser.getId(), "us11-session")
+            .orElseThrow(() -> new AssertionError("Debe existir reserva activa"));
+
+    final PasajeroViajeForm p1 = new PasajeroViajeForm();
+    p1.setNombre("Ana");
+    p1.setApellido("Perez");
+    p1.setTipoDocumento("DNI");
+    p1.setNumeroDocumento("12345678");
+
+    final PasajeroViajeForm p2 = new PasajeroViajeForm();
+    p2.setNombre("Luis");
+    p2.setApellido("Gomez");
+    p2.setTipoDocumento("PASAPORTE");
+    p2.setNumeroDocumento("AB123456");
+
+    final ResumenCompraDto resumen = checkoutService.construirResumen(context, List.of(p1, p2));
+
+    Assert.assertEquals(new BigDecimal("2000.00"), resumen.subtotal());
+    Assert.assertEquals(new BigDecimal("420.00"), resumen.impuestos());
+    Assert.assertEquals(new BigDecimal("2420.00"), resumen.total());
+    Assert.assertEquals(2, resumen.pasajeros().size());
+  }
+
+  @Test
+  public void testUs11ValidacionDocumentosYCantidadDePasajeros() {
+    final PasajeroViajeForm pasajero = new PasajeroViajeForm();
+    pasajero.setNombre("Ana");
+    pasajero.setApellido("Perez");
+    pasajero.setTipoDocumento("DNI");
+    pasajero.setNumeroDocumento("12ABC");
+
+    final List<FormValidationIssue> issues = checkoutService.validarPasajeros(List.of(pasajero), 2);
+    Assert.assertTrue(
+        issues.stream()
+            .anyMatch(
+                issue -> issue.fieldPath().equals("pasajeros") && issue.message().contains("2")));
+
+    final List<FormValidationIssue> issuesFormato =
+        checkoutService.validarPasajeros(List.of(pasajero), 1);
+    Assert.assertTrue(
+        issuesFormato.stream()
+            .anyMatch(issue -> issue.fieldPath().equals("pasajeros[0].numeroDocumento")));
   }
 }

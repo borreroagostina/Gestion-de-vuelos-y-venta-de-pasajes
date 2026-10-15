@@ -16,4 +16,11 @@ public interface ReservaTemporalRepository extends JpaRepository<ReservaTemporal
 
   Optional<ReservaTemporal> findFirstByUsuarioIdAndFechaExpiracionAfterOrderByIdDesc(
       Long usuarioId, LocalDateTime now);
+
+  Optional<ReservaTemporal>
+      findFirstByUsuarioIdAndSesionIdAndFechaExpiracionAfterOrderByFechaExpiracionDesc(
+          Long usuarioId, String sesionId, LocalDateTime now);
+
+  Optional<ReservaTemporal> findFirstByUsuarioIdAndFechaExpiracionAfterOrderByFechaExpiracionDesc(
+      Long usuarioId, LocalDateTime now);
 }

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Resumen de compra</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f7fb; }
+      .container { max-width: 980px; margin: 0 auto; }
+      .card { background: white; border-radius: 12px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .btn { display: inline-block; padding: 0.7rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
+      .btn.secondary { background: #6c757d; }
+      table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; }
+      th, td { text-align: left; padding: 0.65rem; border-bottom: 1px solid #e2e8f0; }
+      .totales { margin-top: 1rem; max-width: 360px; margin-left: auto; }
+      .totales p { display: flex; justify-content: space-between; margin: 0.45rem 0; }
+      .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: 0.8rem; font-weight: bold; }
+      .strong { font-size: 1.1rem; font-weight: bold; }
+      .actions { display: flex; justify-content: space-between; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Resumen consolidado de la compra</h1>
+        <p>
+          Revisa todos los datos antes de confirmar.
+          <span class="badge" th:text="|${minutosRestantes} min restantes de reserva|">10 min restantes</span>
+        </p>
+        <p><strong>Vuelo:</strong> <span th:text="${reserva.codigoVuelo()}">AB1234</span></p>
+        <p><strong>Ruta:</strong> <span th:text="|${reserva.origen()} → ${reserva.destino()}|">Origen → Destino</span></p>
+        <p><strong>Horario:</strong> <span th:text="${reserva.fechaHoraVuelo()}">Horario</span></p>
+        <p><strong>Clase:</strong> <span th:text="${reserva.clase()}">ECONOMY</span></p>
+        <p><strong>Asientos:</strong> <span th:text="${#strings.listJoin(reserva.asientos(), ', ')}">01A, 01B</span></p>
+      </div>
+
+      <div class="card">
+        <h2>Pasajeros asignados por asiento</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Asiento</th>
+              <th>Pasajero</th>
+              <th>Documento</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="item : ${resumen.pasajeros()}">
+              <td th:text="${item.asiento()}">01A</td>
+              <td th:text="${item.nombreCompleto()}">Nombre Apellido</td>
+              <td th:text="|${item.tipoDocumento()} ${item.numeroDocumento()}|">DNI 12345678</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="totales">
+          <p>
+            <span>Subtotal</span>
+            <span th:text="|$ ${resumen.subtotal()}|">$ 0.00</span>
+          </p>
+          <p>
+            <span>Impuestos (21%)</span>
+            <span th:text="|$ ${resumen.impuestos()}|">$ 0.00</span>
+          </p>
+          <p class="strong">
+            <span>Total a debitar</span>
+            <span th:text="|$ ${resumen.total()}|">$ 0.00</span>
+          </p>
+        </div>
+
+        <div class="actions">
+          <a class="btn secondary" th:href="@{/pasajero/checkout/pasajeros}">Volver y corregir datos</a>
+          <a class="btn" th:href="@{/pasajero}">Confirmar más adelante</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

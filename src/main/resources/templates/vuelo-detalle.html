@@ -29,6 +29,16 @@
         .btn.class-btn { background: #2563eb; }
         .btn.class-btn.active { background: #1d4ed8; box-shadow: 0 0 0 2px #bfdbfe; }
         .selection-info { margin-top: 0.7rem; font-size: 0.95rem; color: #1e3a8a; }
+        .info-panel { margin-top: 1rem; border: 1px solid #dbeafe; border-radius: 10px; background: #f8fbff; }
+        .policy-toggle { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: bold; color: #1e40af; cursor: pointer; }
+        .policy-toggle svg { transition: transform 0.2s ease; }
+        .policy-content { max-height: 0; overflow: hidden; transition: max-height 0.25s ease; }
+        .policy-content.open { max-height: 900px; }
+        .policy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; padding-top: 1rem; }
+        .policy-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; }
+        .policy-card h4 { margin-top: 0; margin-bottom: 0.75rem; }
+        .policy-card ul { margin: 0.5rem 0 0; padding-left: 1.2rem; line-height: 1.8; }
+        .inline-badge { display: inline-block; background: #dbeafe; color: #1d4ed8; border-radius: 999px; font-size: 0.75rem; font-weight: bold; padding: 0.2rem 0.6rem; }
     </style>
 </head>
 <body>
@@ -81,6 +91,31 @@
     </div>
 
     <div class="card">
+        <div class="info-panel">
+            <div class="policy-toggle" onclick="togglePolicies()" aria-expanded="false" aria-controls="policyContent">
+                <span>Condiciones de la tarifa y política de equipaje</span>
+                <svg id="policyArrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div id="policyContent" class="policy-content">
+                <div class="policy-grid">
+                    <div th:each="politica : ${politicas}" class="policy-card">
+                        <h4>
+                            <span th:text="${politica.nombreClase()}">ECONOMY</span>
+                            <span class="inline-badge" th:text="${politica.nombreClase() == 'ECONOMY' ? 'Incluida' : 'Premium'}">Incluida</span>
+                        </h4>
+                        <p th:text="${politica.descripcion}">Descripción</p>
+                        <ul>
+                            <li><strong>Bolso de mano:</strong> <span th:text="${politica.equipajeMano()}">Equipaje de mano</span></li>
+                            <li><strong>Equipaje en bodega:</strong> <span th:text="${politica.equipajeBodega()}">Valija en bodega</span></li>
+                            <li><strong>Cambios:</strong> <span th:text="${politica.condicionesCambio()}">Política de cambios</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <h2>Selecciona tus asientos (Máx. 9)</h2>
         <p sec:authorize="isAnonymous()" class="alert error">Debes iniciar sesión como pasajero para reservar.</p>
         <div class="class-choice">
@@ -225,6 +260,17 @@
         document.getElementById('seatCount').innerText = selectedIds.size;
         document.getElementById('selectedClassInput').value = selectedClass || '';
         document.getElementById('btnReservar').disabled = selectedIds.size === 0;
+    }
+
+    function togglePolicies() {
+        const policyPanel = document.getElementById('policyContent');
+        const arrow = document.getElementById('policyArrow');
+        const isOpen = policyPanel.classList.toggle('open');
+        const button = policyPanel.parentElement.querySelector('.policy-toggle');
+        button.setAttribute('aria-expanded', String(isOpen));
+        if (arrow) {
+            arrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
     }
 </script>
 </body>

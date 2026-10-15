@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Datos de pasajeros</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f7fb; }
+      .container { max-width: 980px; margin: 0 auto; }
+      .card { background: white; border-radius: 12px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .btn { display: inline-block; padding: 0.7rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
+      .btn.secondary { background: #6c757d; }
+      .btn.success { background: #16a34a; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 0.8rem; }
+      .group { display: flex; flex-direction: column; gap: 0.35rem; }
+      .group input, .group select { padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; }
+      .error { color: #b91c1c; font-size: 0.9rem; margin-top: 0.2rem; }
+      .panel { border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.9rem; margin-top: 0.8rem; background: #f8fafc; }
+      .info { margin: 0.2rem 0; }
+      .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: 0.8rem; font-weight: bold; }
+      .alert { padding: 0.75rem; border-radius: 8px; margin-bottom: 0.8rem; }
+      .alert.error { background: #fee2e2; color: #991b1b; }
+      .actions { display: flex; justify-content: space-between; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Carga de datos de pasajeros</h1>
+        <p class="info">
+          Completá los datos de los viajeros asociados a tu reserva temporal.
+          <span class="badge" th:text="|${minutosRestantes} min restantes|">10 min restantes</span>
+        </p>
+        <div class="panel">
+          <p class="info"><strong>Vuelo:</strong> <span th:text="${reserva.codigoVuelo()}">AB1234</span></p>
+          <p class="info"><strong>Ruta:</strong> <span th:text="|${reserva.origen()} → ${reserva.destino()}|">Origen → Destino</span></p>
+          <p class="info"><strong>Horario:</strong> <span th:text="${reserva.fechaHoraVuelo()}">Horario</span></p>
+          <p class="info"><strong>Clase:</strong> <span th:text="${reserva.clase()}">ECONOMY</span></p>
+          <p class="info"><strong>Asientos:</strong> <span th:text="${#strings.listJoin(reserva.asientos(), ', ')}">01A, 01B</span></p>
+        </div>
+      </div>
+
+      <form class="card" th:action="@{/pasajero/checkout/resumen}" th:object="${pasajerosForm}" method="post">
+        <div th:if="${#fields.hasGlobalErrors()}" class="alert error">
+          <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Error global</p>
+        </div>
+
+        <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+        <div th:each="pasajero, stat : *{pasajeros}" class="panel">
+          <h3 th:text="|Pasajero ${stat.index + 1}|">Pasajero 1</h3>
+          <p class="info">
+            Asiento asignado:
+            <strong th:text="${reserva.asientos()[stat.index]}">01A</strong>
+          </p>
+
+          <div class="grid">
+            <div class="group">
+              <label>Nombre</label>
+              <input type="text" th:field="*{pasajeros[__${stat.index}__].nombre}" />
+              <span class="error" th:errors="*{pasajeros[__${stat.index}__].nombre}">Error</span>
+            </div>
+            <div class="group">
+              <label>Apellido</label>
+              <input type="text" th:field="*{pasajeros[__${stat.index}__].apellido}" />
+              <span class="error" th:errors="*{pasajeros[__${stat.index}__].apellido}">Error</span>
+            </div>
+            <div class="group">
+              <label>Tipo de documento</label>
+              <select th:field="*{pasajeros[__${stat.index}__].tipoDocumento}">
+                <option value="">Seleccionar</option>
+                <option value="DNI">DNI</option>
+                <option value="PASAPORTE">PASAPORTE</option>
+              </select>
+              <span class="error" th:errors="*{pasajeros[__${stat.index}__].tipoDocumento}">Error</span>
+            </div>
+            <div class="group">
+              <label>Número de documento</label>
+              <input type="text" th:field="*{pasajeros[__${stat.index}__].numeroDocumento}" />
+              <span class="error" th:errors="*{pasajeros[__${stat.index}__].numeroDocumento}">Error</span>
+            </div>
+            <div class="group">
+              <label>Fecha de nacimiento</label>
+              <input type="date" th:field="*{pasajeros[__${stat.index}__].fechaNacimiento}" />
+              <span class="error" th:errors="*{pasajeros[__${stat.index}__].fechaNacimiento}">Error</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a class="btn secondary" th:href="@{/pasajero}">Volver al panel</a>
+          <button type="submit" class="btn success">Ver resumen de compra</button>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

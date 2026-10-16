@@ -20,7 +20,8 @@
     </style>
   </head>
   <body>
-    <div class="container">
+      <div class="container">
+      <div th:if="${error}" class="alert" style="background: #fee2e2; color: #991b1b;" th:text="${error}"></div>
       <div class="actions" style="margin-bottom: 1rem;">
         <a class="btn secondary" th:href="@{/pasajero/checkout}">← Editar pasajeros</a>
         <a class="btn secondary" th:href="@{/pasajero}">Volver al panel</a>
@@ -46,6 +47,13 @@
             <p><strong>Precio unitario:</strong> <span th:text="|$ ${resumen.precioUnitario}|">$ 1000.00</span></p>
           </div>
         </div>
+      </div>
+
+      <div class="card actions">
+        <span>La reserva es temporal. El pago se procesa de forma segura en Stripe Checkout.</span>
+        <form th:action="@{/pasajero/resumen/pagar}" method="post">
+          <button type="submit" class="btn">Continuar al pago seguro</button>
+        </form>
       </div>
 
       <div class="card">

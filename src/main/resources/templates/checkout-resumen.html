@@ -16,10 +16,13 @@
       .badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: 0.8rem; font-weight: bold; }
       .strong { font-size: 1.1rem; font-weight: bold; }
       .actions { display: flex; justify-content: space-between; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+      .alert-error { padding: 0.8rem; margin: 1rem 0; background: #fee2e2; color: #991b1b; border-radius: 6px; }
     </style>
   </head>
   <body>
     <div class="container">
+      <!-- Muestra errores de pago si la tarjeta es rechazada -->
+      <div th:if="${error}" class="alert-error" th:text="${error}"></div>
       <div class="card">
         <h1>Resumen consolidado de la compra</h1>
         <p>
@@ -67,10 +70,15 @@
           </p>
         </div>
 
-        <div class="actions">
-          <a class="btn secondary" th:href="@{/pasajero/checkout/pasajeros}">Volver y corregir datos</a>
-          <a class="btn" th:href="@{/pasajero}">Confirmar más adelante</a>
-        </div>
+        <form th:action="@{/pasajero/checkout/pagar}" method="post" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+          <p>El pago se realizará de forma segura en Stripe Checkout. Los datos de tu tarjeta no se ingresan ni se almacenan en esta plataforma.</p>
+          <div class="actions">
+            <a class="btn secondary" th:href="@{/pasajero/checkout/pasajeros}">Volver y corregir datos</a>
+            <button type="submit" class="btn" style="background: #16a34a; font-weight: bold; color: white; padding: 0.7rem 1.2rem; border-radius: 8px; border: none; cursor: pointer;">
+              Continuar al pago seguro
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </body>

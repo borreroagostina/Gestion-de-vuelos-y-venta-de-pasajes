@@ -38,6 +38,7 @@ public class FlightService {
   private final AeronaveRepository aeronaveRepo;
   private final NotificationService notificationService;
   private final JdbcTemplate jdbcTemplate;
+  private final BookingService bookingService;
 
   public FlightService(
       final VueloProgramadoRepository vueloRepo,
@@ -45,13 +46,15 @@ public class FlightService {
       final AeropuertoRepository aeroRepo,
       final AeronaveRepository aeronaveRepo,
       final NotificationService notificationService,
-      final JdbcTemplate jdbcTemplate) {
+      final JdbcTemplate jdbcTemplate,
+      final BookingService bookingService) {
     this.vueloRepo = vueloRepo;
     this.instanciaRepo = instanciaRepo;
     this.aeroRepo = aeroRepo;
     this.aeronaveRepo = aeronaveRepo;
     this.notificationService = notificationService;
     this.jdbcTemplate = jdbcTemplate;
+    this.bookingService = bookingService;
   }
 
   public List<VueloProgramado> listarVuelosProgramados() {
@@ -225,8 +228,16 @@ public class FlightService {
       throw new IllegalArgumentException("La fecha 'hasta' no puede ser anterior a la de partida");
     }
 
-    return instanciaRepo.buscarVuelosPublicos(
-        origenId, destinoId, fechaSalida, fin, orden, pageable);
+    return instanciaRepo
+        .buscarVuelosPublicos(origenId, destinoId, fechaSalida, fin, orden, pageable)
+        .map(
+            instancia -> {
+              instancia.setAsientosDispEconomy(
+                  Math.toIntExact(bookingService.contarDisponibles(instancia.getId(), "ECONOMY")));
+              instancia.setAsientosDispPrimera(
+                  Math.toIntExact(bookingService.contarDisponibles(instancia.getId(), "PRIMERA")));
+              return instancia;
+            });
   }
 
   private void generarInstancias(

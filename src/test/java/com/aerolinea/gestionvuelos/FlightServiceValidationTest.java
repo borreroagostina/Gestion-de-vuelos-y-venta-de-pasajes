@@ -14,6 +14,7 @@ import com.aerolinea.gestionvuelos.repository.AeronaveRepository;
 import com.aerolinea.gestionvuelos.repository.AeropuertoRepository;
 import com.aerolinea.gestionvuelos.repository.InstanciaVueloRepository;
 import com.aerolinea.gestionvuelos.repository.VueloProgramadoRepository;
+import com.aerolinea.gestionvuelos.service.BookingService;
 import com.aerolinea.gestionvuelos.service.FlightService;
 import com.aerolinea.gestionvuelos.service.NotificationService;
 import java.math.BigDecimal;
@@ -56,6 +57,7 @@ public class FlightServiceValidationTest {
   @Mock private AeronaveRepository aeronaveRepo;
   @Mock private NotificationService notificationService;
   @Mock private JdbcTemplate jdbcTemplate;
+  @Mock private BookingService bookingService;
 
   @Captor private ArgumentCaptor<List<InstanciaVuelo>> instanciasCaptor;
 
@@ -68,7 +70,13 @@ public class FlightServiceValidationTest {
   public void setUp() {
     flightService =
         new FlightService(
-            vueloRepo, instanciaRepo, aeroRepo, aeronaveRepo, notificationService, jdbcTemplate);
+            vueloRepo,
+            instanciaRepo,
+            aeroRepo,
+            aeronaveRepo,
+            notificationService,
+            jdbcTemplate,
+            bookingService);
 
     aeroOrigen = new Aeropuerto("EZE", "Ezeiza", "Buenos Aires", "Argentina");
     aeroOrigen.setId(ID_EZE);
@@ -309,5 +317,30 @@ public class FlightServiceValidationTest {
         flightService.buscarVuelosPublicos(ID_EZE, ID_MIA, inicio, fin, "PRECIO_ASC", pageable);
 
     assertEquals(1, res.getContent().size());
+  }
+
+  @Test
+  public void shouldReturnCurrentSeatAvailabilityForPublicFlightSearch() {
+    final LocalDate departure = LocalDate.now().plusDays(1);
+    final org.springframework.data.domain.Pageable pageable =
+        org.springframework.data.domain.PageRequest.of(0, 10);
+    final InstanciaVuelo instance = new InstanciaVuelo();
+    instance.setId(ID_INSTANCIA_500);
+    instance.setAsientosDispEconomy(SEATS_ECO);
+    instance.setAsientosDispPrimera(SEATS_PRI);
+    when(instanciaRepo.buscarVuelosPublicos(
+            ID_EZE, ID_MIA, departure, departure, "HORA_ASC", pageable))
+        .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(instance)));
+    when(bookingService.contarDisponibles(ID_INSTANCIA_500, "ECONOMY")).thenReturn(149L);
+    when(bookingService.contarDisponibles(ID_INSTANCIA_500, "PRIMERA")).thenReturn(19L);
+
+    final InstanciaVuelo result =
+        flightService
+            .buscarVuelosPublicos(ID_EZE, ID_MIA, departure, null, "HORA_ASC", pageable)
+            .getContent()
+            .getFirst();
+
+    assertEquals(Integer.valueOf(149), result.getAsientosDispEconomy());
+    assertEquals(Integer.valueOf(19), result.getAsientosDispPrimera());
   }
 }

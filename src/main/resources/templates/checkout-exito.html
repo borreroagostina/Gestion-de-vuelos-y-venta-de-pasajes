@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Estado del pago</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f7fb; color: #172033; }
+      main { max-width: 680px; margin: 3rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px #0001; }
+      .status { padding: 1rem; border-radius: 8px; background: #eff6ff; }
+      .btn { display: inline-block; margin-top: 1rem; padding: 0.7rem 1rem; color: white; background: #0d6efd; border-radius: 8px; text-decoration: none; }
+      .btn[hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <main id="payment-result" th:attr="data-order-code=${orderCode},data-status=${paymentStatus},data-status-url=@{/pasajero/checkout/orden/{code}/estado(code=${orderCode})}">
+      <h1>Estado de tu compra</h1>
+      <p>Código de reserva: <strong th:text="${orderCode}">código</strong></p>
+      <p class="status" id="status-message" aria-live="polite">Consultando el estado del pago...</p>
+      <p id="transaction" th:if="${transactionId != null}">Transacción: <span th:text="${transactionId}">id</span></p>
+      <a class="btn" th:href="@{/pasajero}">Volver al panel</a>
+      <a class="btn" id="retry" th:href="@{/pasajero/resumen}" hidden>Reintentar pago</a>
+    </main>
+    <script>
+      const page = document.getElementById('payment-result');
+      const message = document.getElementById('status-message');
+      const retry = document.getElementById('retry');
+      const descriptions = {
+        PENDING: 'El pago está pendiente de confirmación de la pasarela. Esta página se actualizará automáticamente.',
+        APPROVED: 'Pago confirmado. Los pasajes y la factura se enviarán por correo electrónico.',
+        REJECTED: 'El pago no fue aprobado. Podés volver al resumen e intentar con otro medio mientras la reserva siga vigente.',
+        EXPIRED: 'La reserva venció y no se confirmó la compra. Volvé a buscar el vuelo para elegir asientos nuevamente.',
+        REFUND_PENDING: 'La reserva venció antes de la confirmación. Se solicitó la devolución del pago tardío.',
+        REFUNDED: 'La reserva había vencido; el pago tardío fue devuelto por la pasarela.'
+      };
+      function render(status) {
+        message.textContent = descriptions[status] || 'Estado del pago: ' + status;
+        retry.hidden = status !== 'REJECTED';
+      }
+      let status = page.dataset.status;
+      render(status);
+      if (status === 'PENDING') {
+        const url = page.dataset.statusUrl;
+        const poll = async () => {
+          try {
+            const response = await fetch(url, {headers: {'Accept': 'application/json'}});
+            if (response.ok) {
+              const result = await response.json();
+              status = result.status;
+              render(status);
+              if (result.transactionId) {
+                const transaction = document.getElementById('transaction') || document.createElement('p');
+                transaction.id = 'transaction';
+                transaction.textContent = 'Transacción: ' + result.transactionId;
+                page.insertBefore(transaction, page.querySelector('.btn'));
+              }
+            }
+          } finally {
+            if (status === 'PENDING') window.setTimeout(poll, 3000);
+          }
+        };
+        window.setTimeout(poll, 3000);
+      }
+    </script>
+  </body>
+</html>

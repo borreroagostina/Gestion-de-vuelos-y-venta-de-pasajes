@@ -24,6 +24,7 @@ import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import com.aerolinea.gestionvuelos.service.CatalogService;
+import com.aerolinea.gestionvuelos.service.CheckoutPaymentService;
 import com.aerolinea.gestionvuelos.service.PassengerCheckoutService;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +59,8 @@ class SecurityAccessControlTest {
   @MockitoBean private CatalogService catalogService;
 
   @MockitoBean private PassengerCheckoutService passengerCheckoutService;
+
+  @MockitoBean private CheckoutPaymentService checkoutPaymentService;
 
   @BeforeEach
   void setUp() {

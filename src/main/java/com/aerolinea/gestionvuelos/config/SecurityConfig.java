@@ -33,7 +33,8 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http.authorizeHttpRequests(
+    http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/pagos/**"))
+        .authorizeHttpRequests(
             authz ->
                 authz
                     .requestMatchers(
@@ -45,6 +46,8 @@ public class SecurityConfig {
                     .hasRole("EMPLEADO")
                     .requestMatchers("/admin/**")
                     .hasRole("ADMIN")
+                    .requestMatchers("/api/pagos/**")
+                    .permitAll()
                     .anyRequest()
                     .authenticated())
         .formLogin(

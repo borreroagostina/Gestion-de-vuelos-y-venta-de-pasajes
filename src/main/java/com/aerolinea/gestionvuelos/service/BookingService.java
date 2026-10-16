@@ -171,7 +171,7 @@ public class BookingService {
   }
 
   private void liberarReservasExpiradasEn(LocalDateTime ahora) {
-    final List<ReservaTemporal> expiradas = reservaRepo.findByFechaExpiracionBefore(ahora);
+    final List<ReservaTemporal> expiradas = reservaRepo.findExpiredWithLock(ahora);
     for (ReservaTemporal r : expiradas) {
       liberarReserva(r);
     }

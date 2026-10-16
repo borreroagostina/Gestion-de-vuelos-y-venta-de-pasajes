@@ -3,6 +3,7 @@ package com.aerolinea.gestionvuelos.service;
 import com.aerolinea.gestionvuelos.dto.DatosPasajeroForm;
 import com.aerolinea.gestionvuelos.dto.DatosPasajerosForm;
 import com.aerolinea.gestionvuelos.dto.ResumenCompraView;
+import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
 import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
 import com.aerolinea.gestionvuelos.model.ReservaAsiento;
 import com.aerolinea.gestionvuelos.model.ReservaTemporal;
@@ -43,7 +44,17 @@ public class PassengerCheckoutService {
 
   @Transactional(readOnly = true)
   public boolean tieneReservaActiva(String email, String sesionId) {
-    return buscarReservaActiva(email, sesionId) != null;
+    final ReservaTemporal reserva = buscarReservaActiva(email, sesionId);
+    if (reserva == null) {
+      return false;
+    }
+    final LocalDateTime ahora = LocalDateTime.now();
+    return listarReservaAsientoOrdenada(reserva).stream()
+        .anyMatch(
+            reservaAsiento ->
+                reservaAsiento.getEstado() == EstadoReservaAsiento.RESERVADO_TEMPORAL
+                    && reservaAsiento.getFechaExpiracion().isAfter(ahora)
+                    && "RESERVADO".equals(reservaAsiento.getAsiento().getEstado()));
   }
 
   @Transactional(readOnly = true)
@@ -137,6 +148,11 @@ public class PassengerCheckoutService {
         subtotal,
         impuestos,
         total);
+  }
+
+  @Transactional(readOnly = true)
+  public Long obtenerReservaActivaId(String email, String sesionId) {
+    return obtenerReservaActiva(email, sesionId).getId();
   }
 
   @Transactional(readOnly = true)

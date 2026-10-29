@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Mis Pasajes - Gestión de Vuelos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f4f7fb; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
+        .btn { display: inline-block; padding: 0.6rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; border: none; font-size: 0.9rem; cursor: pointer; }
+        .btn.secondary { background: #6c757d; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+        .alert.info { background: #e0f2fe; color: #0369a1; }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .badge-approved {
+            background: #dcfce7;
+            color: #15803d;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+        .passenger-list {
+            list-style: none;
+            padding-left: 0;
+            margin: 0.5rem 0 1rem 0;
+        }
+        .passenger-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .actions-bar {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <a class="btn secondary" th:href="@{/pasajero}">Ir a mi inicio</a>
+        <form method="post" th:action="@{/logout}" style="display: inline;">
+            <button type="submit" class="btn secondary">
+                Cerrar sesión
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h1>Mis Pasajes y Comprobantes</h1>
+        <p style="color: #4b5563;">Historial de compras confirmadas de pasajes e itinerarios.</p>
+    </div>
+
+    <div th:if="${#lists.isEmpty(compras)}" class="card alert info">
+        Aún no tenés pasajes ni compras realizadas.
+    </div>
+
+    <div th:each="compra : ${compras}" class="card">
+        <div class="ticket-header">
+            <div>
+                <strong th:text="|Orden #${compra.orderCode()}|">Orden #12345</strong>
+                <span class="badge-approved">CONFIRMADO</span>
+            </div>
+            <div style="font-size: 0.9rem; color: #4b5563;">
+                <span>Fecha de compra: </span>
+                <span th:text="${#temporals.format(compra.fechaPago(), 'dd/MM/yyyy HH:mm')}">01/10/2026</span>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <p style="margin: 0.3rem 0;"><strong>Vuelo:</strong> <span th:text="${compra.codigoVuelo()}">AR123</span></p>
+                <p style="margin: 0.3rem 0;"><strong>Origen:</strong> <span th:text="${compra.origen()}">Buenos Aires</span></p>
+                <p style="margin: 0.3rem 0;"><strong>Destino:</strong> <span th:text="${compra.destino()}">Mendoza</span></p>
+            </div>
+            <div>
+                <p style="margin: 0.3rem 0;"><strong>Fecha Salida:</strong> <span th:text="${#temporals.format(compra.fechaSalida(), 'dd/MM/yyyy HH:mm')}">15/10/2026 08:00</span></p>
+                <p style="margin: 0.3rem 0;"><strong>Total abonado:</strong> <span th:text="|$ ${compra.montoTotal()}|">$ 150000.00</span></p>
+            </div>
+        </div>
+
+        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Pasajeros</h3>
+        <ul class="passenger-list">
+            <li th:each="pasaje : ${compra.pasajes()}" class="passenger-item">
+                <span th:text="|Asiento ${pasaje.numeroAsiento()}: ${pasaje.nombrePasajero()} (${pasaje.documentoPasajero()})|">
+                    Asiento 01A: Juan Pérez (DNI 12345678)
+                </span>
+                <a th:href="@{/pasajero/mis-pasajes/pasaje/{id}/pdf(id=${pasaje.reservaAsientoId()})}"
+                   class="btn btn-sm" target="_blank">
+                    📄 Descargar Pasaje
+                </a>
+            </li>
+        </ul>
+
+        <div class="actions-bar">
+            <a th:href="@{/pasajero/mis-pasajes/orden/{code}/factura(code=${compra.orderCode()})}"
+               class="btn secondary btn-sm" target="_blank">
+                🧾 Descargar Factura (PDF)
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

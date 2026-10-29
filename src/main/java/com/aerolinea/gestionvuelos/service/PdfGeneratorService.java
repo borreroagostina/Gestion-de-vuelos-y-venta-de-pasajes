@@ -36,6 +36,14 @@ public class PdfGeneratorService {
     return attachments;
   }
 
+  public byte[] generarFacturaPdf(PaymentOrder order, List<ReservaAsiento> reservationSeats) {
+    return generateInvoice(order, reservationSeats);
+  }
+
+  public byte[] generarPasajePdf(PaymentOrder order, ReservaAsiento reservationSeat) {
+    return generateTicket(order, reservationSeat);
+  }
+
   private byte[] generateTicket(PaymentOrder order, ReservaAsiento reservationSeat) {
     try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
       final Document document = new Document();

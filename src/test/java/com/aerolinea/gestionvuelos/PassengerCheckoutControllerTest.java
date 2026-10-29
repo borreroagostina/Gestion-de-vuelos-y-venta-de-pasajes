@@ -22,6 +22,8 @@ import com.aerolinea.gestionvuelos.dto.ResumenCompraView;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import com.aerolinea.gestionvuelos.service.CheckoutPaymentService;
+import com.aerolinea.gestionvuelos.service.CheckoutService;
+import com.aerolinea.gestionvuelos.service.MyTicketsService;
 import com.aerolinea.gestionvuelos.service.PassengerCheckoutService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -53,6 +55,10 @@ class PassengerCheckoutControllerTest {
   @MockitoBean private PassengerCheckoutService passengerCheckoutService;
 
   @MockitoBean private CheckoutPaymentService checkoutPaymentService;
+
+  @MockitoBean private MyTicketsService myTicketsService;
+
+  @MockitoBean private CheckoutService checkoutService;
 
   @BeforeEach
   void setUp() {

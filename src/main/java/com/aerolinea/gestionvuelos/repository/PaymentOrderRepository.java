@@ -10,11 +10,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long> {
   Optional<PaymentOrder> findByOrderCode(String orderCode);
 
   Optional<PaymentOrder> findByOrderCodeAndUsuarioEmailIgnoreCase(String orderCode, String email);
+
+  Optional<PaymentOrder> findByReservaTemporalId(Long reservaTemporalId);
 
   List<PaymentOrder> findByStatus(PaymentOrderStatus status);
 
@@ -45,4 +49,28 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long
           + "AND LOWER(p.usuario.email) = LOWER(:email)")
   Optional<PaymentOrder> findOwnedByOrderCodeWithLock(
       @Param("orderCode") String orderCode, @Param("email") String email);
+
+  @Query(
+      "SELECT p FROM PaymentOrder p WHERE LOWER(p.usuario.email) = LOWER(:email) "
+          + "AND p.status = :status ORDER BY p.updatedAt DESC, p.id DESC")
+  List<PaymentOrder> findHistorialUsuario(
+      @Param("email") String email, @Param("status") PaymentOrderStatus status);
+
+  @Query(
+      "SELECT p FROM PaymentOrder p WHERE p.orderCode = :orderCode "
+          + "AND LOWER(p.usuario.email) = LOWER(:email) AND p.status = :status")
+  Optional<PaymentOrder> findOwnedByOrderCodeAndStatus(
+      @Param("orderCode") String orderCode,
+      @Param("email") String email,
+      @Param("status") PaymentOrderStatus status);
+
+  @Query(
+      "SELECT p FROM PaymentOrder p WHERE p.reservaTemporal.id = :reservaTemporalId "
+          + "AND LOWER(p.usuario.email) = LOWER(:email) AND p.status = :status")
+  Optional<PaymentOrder> findOwnedByReservaTemporalIdAndStatus(
+      @Param("reservaTemporalId") Long reservaTemporalId,
+      @Param("email") String email,
+      @Param("status") PaymentOrderStatus status);
+
+  Optional<PaymentOrder> findByOrderCodeAndUsuarioEmail(String orderCode, String email);
 }

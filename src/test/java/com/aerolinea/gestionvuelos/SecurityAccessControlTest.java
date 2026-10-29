@@ -23,9 +23,8 @@ import com.aerolinea.gestionvuelos.controller.PassengerController;
 import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
-import com.aerolinea.gestionvuelos.service.CatalogService;
-import com.aerolinea.gestionvuelos.service.CheckoutPaymentService;
-import com.aerolinea.gestionvuelos.service.PassengerCheckoutService;
+import com.aerolinea.gestionvuelos.service.*;
+
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,6 +60,10 @@ class SecurityAccessControlTest {
   @MockitoBean private PassengerCheckoutService passengerCheckoutService;
 
   @MockitoBean private CheckoutPaymentService checkoutPaymentService;
+
+  @MockitoBean private FlightService flightService;
+
+  @MockitoBean private MyTicketsService myTicketsService;
 
   @BeforeEach
   void setUp() {

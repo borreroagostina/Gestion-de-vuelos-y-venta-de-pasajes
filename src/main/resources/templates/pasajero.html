@@ -33,8 +33,12 @@
       <div class="card">
         <h1 th:text="${title}">Panel del pasajero</h1>
         <p th:text="${subtitle}">Busqueda, compra y gestion de viajes</p>
-        <div style="margin-top: 1rem;">
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
           <a class="btn" th:href="@{${compraPath}}">Buscar vuelos y comprar pasajes</a>
+
+          <!-- Enlace agregado para la US 15 -->
+          <a class="btn" th:href="@{/pasajero/mis-pasajes}">Mis Pasajes y Comprobantes</a>
+
           <a class="btn secondary" th:if="${checkoutActivo}" th:href="@{/pasajero/checkout}">
             Continuar compra en curso
           </a>

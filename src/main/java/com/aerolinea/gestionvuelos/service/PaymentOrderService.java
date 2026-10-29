@@ -297,30 +297,25 @@ public class PaymentOrderService {
   }
 
   private void finalizePurchase(PaymentOrder order, ReservaTemporal reservation) {
-    final List<ReservaAsiento> seats =
-        reservationSeatRepository.findByReservaTemporalIdWithLock(reservation.getId());
-    final List<Asiento> lockedSeats =
-        seatRepository.findAllByIdWithLock(
+    final List<ReservaAsiento> seats = reservationSeatRepository.findByReservaTemporalIdWithLock(reservation.getId());
+    final List<Asiento> lockedSeats = seatRepository.findAllByIdWithLock(
             seats.stream().map(item -> item.getAsiento().getId()).toList());
-    final Map<Long, Asiento> seatsById =
-        lockedSeats.stream().collect(Collectors.toMap(Asiento::getId, Function.identity()));
-    if (seats.isEmpty()
-        || lockedSeats.size() != seats.size()
-        || seats.stream()
-            .anyMatch(
-                seat ->
-                    seat.getEstado() != EstadoReservaAsiento.RESERVADO_TEMPORAL
+    final Map<Long, Asiento> seatsById = lockedSeats.stream().collect(Collectors.toMap(Asiento::getId, Function.identity()));
+
+    if (seats.isEmpty() || lockedSeats.size() != seats.size() || seats.stream()
+            .anyMatch(seat -> seat.getEstado() != EstadoReservaAsiento.RESERVADO_TEMPORAL
                         || !seatsById.containsKey(seat.getAsiento().getId())
-                        || !"RESERVADO"
-                            .equals(seatsById.get(seat.getAsiento().getId()).getEstado()))) {
+                        || !"RESERVADO".equals(seatsById.get(seat.getAsiento().getId()).getEstado()))) {
       order.setStatus(PaymentOrderStatus.REFUND_PENDING);
       order.setUpdatedAt(LocalDateTime.now());
       return;
     }
+
     for (ReservaAsiento reservationSeat : seats) {
       reservationSeat.setEstado(EstadoReservaAsiento.VENDIDO);
       seatsById.get(reservationSeat.getAsiento().getId()).setEstado("VENDIDO");
     }
+
     reservationSeatRepository.saveAll(seats);
     seatRepository.saveAll(lockedSeats);
     order.setStatus(PaymentOrderStatus.APPROVED);

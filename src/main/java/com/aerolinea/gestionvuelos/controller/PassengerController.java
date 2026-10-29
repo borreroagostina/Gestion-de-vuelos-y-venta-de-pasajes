@@ -6,6 +6,7 @@ import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import com.aerolinea.gestionvuelos.service.CheckoutPaymentService;
+import com.aerolinea.gestionvuelos.service.MyTicketsService;
 import com.aerolinea.gestionvuelos.service.PassengerCheckoutService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -32,14 +33,17 @@ public class PassengerController {
   private final PassengerCheckoutService passengerCheckoutService;
   private final CheckoutPaymentService checkoutPaymentService;
   private final UsuarioRepository usuarioRepository;
+  private final MyTicketsService myTicketsService;
 
   public PassengerController(
+      UsuarioRepository usuarioRepository,
       PassengerCheckoutService passengerCheckoutService,
       CheckoutPaymentService checkoutPaymentService,
-      UsuarioRepository usuarioRepository) {
+      MyTicketsService myTicketsService) {
+    this.usuarioRepository = usuarioRepository;
     this.passengerCheckoutService = passengerCheckoutService;
     this.checkoutPaymentService = checkoutPaymentService;
-    this.usuarioRepository = usuarioRepository;
+    this.myTicketsService = myTicketsService;
   }
 
   @GetMapping("/pasajero")

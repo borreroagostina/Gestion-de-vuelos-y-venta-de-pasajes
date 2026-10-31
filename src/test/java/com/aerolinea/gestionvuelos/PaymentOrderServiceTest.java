@@ -80,9 +80,8 @@ public class PaymentOrderServiceTest {
 
   @Before
   public void setUp() {
-    origin = airportRepository.save(new Aeropuerto("EZE", "Ezeiza", "Buenos Aires", "Argentina"));
-    destination =
-        airportRepository.save(new Aeropuerto("COR", "Pajas Blancas", "Córdoba", "Argentina"));
+    origin = findOrCreateAirport("EZE", "Ezeiza", "Buenos Aires");
+    destination = findOrCreateAirport("COR", "Pajas Blancas", "Córdoba");
     aircraft =
         aircraftRepository.save(
             new Aeronave("Test Jet", "Test", "TJ" + System.nanoTime(), ECONOMY_SEAT_COUNT, 2));
@@ -96,6 +95,13 @@ public class PaymentOrderServiceTest {
     passenger.setRol(RolUsuario.PASAJERO);
     passenger.setActivo(true);
     passenger = userRepository.save(passenger);
+  }
+
+  private Aeropuerto findOrCreateAirport(String iataCode, String name, String city) {
+    return airportRepository.findAll().stream()
+        .filter(airport -> iataCode.equalsIgnoreCase(airport.getCodigoIata()))
+        .findFirst()
+        .orElseGet(() -> airportRepository.save(new Aeropuerto(iataCode, name, city, "Argentina")));
   }
 
   @Test

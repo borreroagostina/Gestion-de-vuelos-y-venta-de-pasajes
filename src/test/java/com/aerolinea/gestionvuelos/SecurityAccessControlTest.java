@@ -26,10 +26,8 @@ import com.aerolinea.gestionvuelos.dto.OcupacionVueloDto;
 import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
-<<<<<<< Updated upstream
 import com.aerolinea.gestionvuelos.service.*;
 
-=======
 import com.aerolinea.gestionvuelos.service.CatalogService;
 import com.aerolinea.gestionvuelos.service.CheckoutPaymentService;
 import com.aerolinea.gestionvuelos.service.OcupacionReportService;
@@ -37,7 +35,6 @@ import com.aerolinea.gestionvuelos.service.PassengerCheckoutService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
->>>>>>> Stashed changes
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,13 +78,10 @@ class SecurityAccessControlTest {
 
   @MockitoBean private CheckoutPaymentService checkoutPaymentService;
 
-<<<<<<< Updated upstream
   @MockitoBean private FlightService flightService;
 
   @MockitoBean private MyTicketsService myTicketsService;
-=======
   @MockitoBean private OcupacionReportService ocupacionReportService;
->>>>>>> Stashed changes
 
   @BeforeEach
   void setUp() {

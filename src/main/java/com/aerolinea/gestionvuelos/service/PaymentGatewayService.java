@@ -41,7 +41,7 @@ public class PaymentGatewayService implements PaymentGateway {
       @Value("${app.payment.stripe.webhook-secret:}") String webhookSecret,
       @Value("${app.base-url:http://localhost:8080}") String baseUrl,
       @Value("${app.payment.stripe.api-base-url:https://api.stripe.com}") String apiBaseUrl,
-      @Value("${app.payment.currency:ARS}") String currency) {
+      @Value("${app.payment.currency:USD}") String currency) {
     this.restClient = restClientBuilder.baseUrl(apiBaseUrl).build();
     this.secretKey = secretKey.trim();
     this.webhookSecret = webhookSecret.trim();

@@ -2,18 +2,23 @@ package com.aerolinea.gestionvuelos.service;
 
 import com.aerolinea.gestionvuelos.model.Aeronave;
 import com.aerolinea.gestionvuelos.model.Asiento;
+import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
 import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
 import com.aerolinea.gestionvuelos.model.VueloProgramado;
 import com.aerolinea.gestionvuelos.repository.AeronaveRepository;
 import com.aerolinea.gestionvuelos.repository.AeropuertoRepository;
 import com.aerolinea.gestionvuelos.repository.InstanciaVueloRepository;
+import com.aerolinea.gestionvuelos.repository.ReservaAsientoRepository;
 import com.aerolinea.gestionvuelos.repository.VueloProgramadoRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,6 +39,7 @@ public class FlightService {
 
   private final VueloProgramadoRepository vueloRepo;
   private final InstanciaVueloRepository instanciaRepo;
+  private final ReservaAsientoRepository reservaAsientoRepo;
   private final AeropuertoRepository aeroRepo;
   private final AeronaveRepository aeronaveRepo;
   private final NotificationService notificationService;
@@ -43,6 +49,7 @@ public class FlightService {
   public FlightService(
       final VueloProgramadoRepository vueloRepo,
       final InstanciaVueloRepository instanciaRepo,
+      final ReservaAsientoRepository reservaAsientoRepo,
       final AeropuertoRepository aeroRepo,
       final AeronaveRepository aeronaveRepo,
       final NotificationService notificationService,
@@ -50,6 +57,7 @@ public class FlightService {
       final BookingService bookingService) {
     this.vueloRepo = vueloRepo;
     this.instanciaRepo = instanciaRepo;
+    this.reservaAsientoRepo = reservaAsientoRepo;
     this.aeroRepo = aeroRepo;
     this.aeronaveRepo = aeronaveRepo;
     this.notificationService = notificationService;
@@ -115,6 +123,7 @@ public class FlightService {
     final LocalDate hoy = LocalDate.now();
     final List<InstanciaVuelo> futuras =
         instanciaRepo.findByVueloProgramadoIdAndFechaSalidaGreaterThanEqual(existente.getId(), hoy);
+    final Set<LocalDate> fechasConVentas = new HashSet<>();
 
     // Validación: no permitir reducir asientos por debajo de los ya vendidos
     for (final InstanciaVuelo inst : futuras) {
@@ -133,7 +142,14 @@ public class FlightService {
                 + vendidosPrimera
                 + ")");
       }
+      if (vendidosEconomy > 0 || vendidosPrimera > 0) {
+        fechasConVentas.add(inst.getFechaSalida());
+      }
     }
+
+    final boolean cambioHorario =
+        !Objects.equals(existente.getHoraSalida(), vuelo.getHoraSalida())
+            || !Objects.equals(existente.getHoraLlegada(), vuelo.getHoraLlegada());
 
     // Actualización de campos del vuelo programado
     existente.setCodigoVuelo(vuelo.getCodigoVuelo());
@@ -149,6 +165,8 @@ public class FlightService {
     existente.setFechaFinVenta(vuelo.getFechaFinVenta());
 
     final VueloProgramado actualizado = vueloRepo.save(existente);
+    // Toma el lock de escritura antes de tocar las instancias, para evitar deadlocks por FK
+    vueloRepo.flush();
 
     // Eliminar instancias futuras que no tengan ventas registradas
     for (final InstanciaVuelo inst : futuras) {
@@ -156,6 +174,17 @@ public class FlightService {
       final int vendidosPri = calcularAsientosVendidos(inst.getId(), "PRIMERA");
       if (vendidosEco == 0 && vendidosPri == 0) {
         instanciaRepo.delete(inst);
+      } else if (cambioHorario) {
+        final var horaSalidaAnterior = inst.getHoraSalida();
+        final var horaLlegadaAnterior = inst.getHoraLlegada();
+        inst.setHoraSalida(actualizado.getHoraSalida());
+        inst.setHoraLlegada(actualizado.getHoraLlegada());
+        inst.setFechaLlegada(
+            actualizado.llegaAlDiaSiguiente()
+                ? inst.getFechaSalida().plusDays(1)
+                : inst.getFechaSalida());
+        instanciaRepo.save(inst);
+        notificationService.notificarCambioHorario(inst, horaSalidaAnterior, horaLlegadaAnterior);
       }
     }
 
@@ -164,7 +193,7 @@ public class FlightService {
         actualizado.getFechaInicioVenta().isAfter(hoy) ? actualizado.getFechaInicioVenta() : hoy;
 
     if (!desde.isAfter(actualizado.getFechaFinVenta())) {
-      generarInstancias(actualizado, desde, actualizado.getFechaFinVenta());
+      generarInstancias(actualizado, desde, actualizado.getFechaFinVenta(), fechasConVentas);
     }
 
     return actualizado;
@@ -242,12 +271,20 @@ public class FlightService {
 
   private void generarInstancias(
       final VueloProgramado vuelo, final LocalDate inicio, final LocalDate fin) {
+    generarInstancias(vuelo, inicio, fin, Set.of());
+  }
+
+  private void generarInstancias(
+      final VueloProgramado vuelo,
+      final LocalDate inicio,
+      final LocalDate fin,
+      final Set<LocalDate> fechasExistentes) {
     final List<DayOfWeek> diasPermitidos = parsearDiasSemana(vuelo.getDiasSemana());
     final List<InstanciaVuelo> lista = new ArrayList<>();
 
     LocalDate cursor = inicio;
     while (!cursor.isAfter(fin)) {
-      if (diasPermitidos.contains(cursor.getDayOfWeek())) {
+      if (diasPermitidos.contains(cursor.getDayOfWeek()) && !fechasExistentes.contains(cursor)) {
         final InstanciaVuelo inst = new InstanciaVuelo();
         inst.setVueloProgramado(vuelo);
         inst.setFechaSalida(cursor);
@@ -405,12 +442,8 @@ public class FlightService {
   }
 
   private int calcularAsientosVendidos(final Long instanciaId, final String clase) {
-    final String query = "SELECT COUNT(*) FROM ventas WHERE vuelo_id = ? AND UPPER(clase) = ?";
-    try {
-      final Integer cant = jdbcTemplate.queryForObject(query, Integer.class, instanciaId, clase);
-      return cant != null ? cant : 0;
-    } catch (final Exception e) {
-      return 0;
-    }
+    return Math.toIntExact(
+        reservaAsientoRepo.countByInstanciaAndClaseAndEstado(
+            instanciaId, clase, EstadoReservaAsiento.VENDIDO));
   }
 }

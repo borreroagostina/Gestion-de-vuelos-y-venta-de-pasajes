@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Reporte de ocupación</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f8f1f5; }
+      .container { max-width: 1100px; margin: 0 auto; }
+      .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .filters, .actions { display: flex; align-items: end; gap: 1rem; flex-wrap: wrap; }
+      .filters label { display: flex; flex-direction: column; gap: 0.35rem; }
+      input, select { padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; }
+      .btn { display: inline-block; padding: 0.65rem 1rem; background: #dc3545; color: white; text-decoration: none; border: 0; border-radius: 8px; cursor: pointer; }
+      .btn.secondary { background: #6c757d; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 0.7rem; border-bottom: 1px solid #e2e8f0; }
+      .error { padding: 0.8rem; margin-bottom: 1rem; background: #fee2e2; color: #991b1b; border-radius: 6px; }
+      .actions { justify-content: space-between; margin-bottom: 1rem; }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <div class="actions">
+        <a class="btn secondary" th:href="@{/admin}">← Panel de administración</a>
+        <a class="btn secondary" th:href="@{/admin/vuelos}">Gestión de vuelos</a>
+      </div>
+      <section class="card">
+        <h1>Reporte de ocupación</h1>
+        <p>Asientos vendidos sobre la capacidad de cada clase de la aeronave.</p>
+        <form class="filters" method="get" th:action="@{/admin/reportes/ocupacion}">
+          <label>
+            Vuelo
+            <select name="vueloId">
+              <option value="">Todos los vuelos</option>
+              <option th:each="vuelo : ${vuelos}" th:value="${vuelo.id}"
+                      th:selected="${vuelo.id == vueloId}" th:text="${vuelo.codigoVuelo}">AB123</option>
+            </select>
+          </label>
+          <label>
+            Clase
+            <select name="clase">
+              <option value="TODAS" th:selected="${clase == 'TODAS'}">Todas las clases</option>
+              <option value="ECONOMY" th:selected="${clase == 'ECONOMY'}">Economy</option>
+              <option value="PRIMERA" th:selected="${clase == 'PRIMERA'}">Primera Clase</option>
+            </select>
+          </label>
+          <label>Desde <input type="date" name="fechaDesde" th:value="${fechaDesde}" /></label>
+          <label>Hasta <input type="date" name="fechaHasta" th:value="${fechaHasta}" /></label>
+          <button class="btn" type="submit">Generar reporte</button>
+        </form>
+      </section>
+
+      <div class="error" th:if="${error}" th:text="${error}"></div>
+
+      <section class="card">
+        <div class="actions">
+          <h2>Resultados</h2>
+          <a class="btn" th:if="${!#lists.isEmpty(reporte)}"
+             th:href="@{/admin/reportes/ocupacion/exportar(vueloId=${vueloId},clase=${clase},fechaDesde=${fechaDesde},fechaHasta=${fechaHasta})}">
+            Descargar CSV
+          </a>
+        </div>
+        <p th:if="${#lists.isEmpty(reporte)}">No hay vuelos para los filtros seleccionados.</p>
+        <table th:if="${!#lists.isEmpty(reporte)}">
+          <thead>
+            <tr>
+              <th>Vuelo</th>
+              <th>Fecha de salida</th>
+              <th>Ruta</th>
+              <th>Clase</th>
+              <th>Vendidos</th>
+              <th>Capacidad</th>
+              <th>Ocupación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="fila : ${reporte}">
+              <td th:text="${fila.codigoVuelo()}">AB123</td>
+              <td th:text="${fila.fechaSalida()}">2026-10-31</td>
+              <td th:text="|${fila.origen()} → ${fila.destino()}|">EZE → COR</td>
+              <td th:text="${fila.clase() == 'PRIMERA' ? 'Primera Clase' : 'Economy'}">Economy</td>
+              <td th:text="${fila.vendidos()}">0</td>
+              <td th:text="${fila.capacidad()}">150</td>
+              <td th:text="|${fila.porcentajeOcupacion()}%|">0.00%</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </body>
+</html>

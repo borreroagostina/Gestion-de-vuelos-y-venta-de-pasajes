@@ -42,7 +42,7 @@ public class PaymentGatewayServiceTest {
             WEBHOOK_SECRET,
             "http://localhost:8080",
             "https://api.stripe.test",
-            "ARS");
+            "USD");
   }
 
   @Test
@@ -53,6 +53,7 @@ public class PaymentGatewayServiceTest {
         .andExpect(content().string(Matchers.containsString("mode=payment")))
         .andExpect(content().string(Matchers.containsString("client_reference_id=order-123")))
         .andExpect(content().string(Matchers.containsString("unit_amount")))
+        .andExpect(content().string(Matchers.containsString("=usd")))
         .andExpect(content().string(Matchers.not(Matchers.containsString("4111111111111111"))))
         .andRespond(
             withSuccess(
@@ -63,7 +64,7 @@ public class PaymentGatewayServiceTest {
         new PaymentOrderService.PendingOrder(
             "order-123",
             new BigDecimal("1210.00"),
-            "ARS",
+            "USD",
             "passenger@example.test",
             LocalDateTime.now().plusMinutes(8));
 
@@ -105,7 +106,7 @@ public class PaymentGatewayServiceTest {
         .andRespond(
             withSuccess(
                 "{\"id\":\"cs_test_123\",\"client_reference_id\":\"order-123\","
-                    + "\"amount_total\":121000,\"currency\":\"ars\",\"payment_status\":\"paid\","
+                    + "\"amount_total\":121000,\"currency\":\"usd\",\"payment_status\":\"paid\","
                     + "\"status\":\"complete\",\"payment_intent\":{\"id\":\"pi_test_123\","
                     + "\"status\":\"succeeded\"}}",
                 MediaType.APPLICATION_JSON));
@@ -117,7 +118,7 @@ public class PaymentGatewayServiceTest {
     assertEquals("approved", payment.status());
     assertEquals("order-123", payment.externalReference());
     assertEquals(0, new BigDecimal("1210.00").compareTo(payment.amount()));
-    assertEquals("ARS", payment.currency());
+    assertEquals("USD", payment.currency());
     server.verify();
   }
 }

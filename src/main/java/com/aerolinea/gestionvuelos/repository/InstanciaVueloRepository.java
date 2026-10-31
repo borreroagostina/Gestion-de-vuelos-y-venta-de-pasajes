@@ -19,6 +19,18 @@ public interface InstanciaVueloRepository extends JpaRepository<InstanciaVuelo, 
   List<InstanciaVuelo> findByVueloProgramadoIdOrderByFechaSalidaAsc(Long vueloId);
 
   @Query(
+      "SELECT i FROM InstanciaVuelo i "
+          + "WHERE (:vueloId IS NULL OR i.vueloProgramado.id = :vueloId) "
+          + "AND (:fechaDesde IS NULL OR i.fechaSalida >= :fechaDesde) "
+          + "AND (:fechaHasta IS NULL OR i.fechaSalida <= :fechaHasta) "
+          + "AND i.cancelada = false AND i.vueloProgramado.cancelado = false "
+          + "ORDER BY i.fechaSalida ASC, i.vueloProgramado.codigoVuelo ASC")
+  List<InstanciaVuelo> buscarParaReporte(
+      @Param("vueloId") Long vueloId,
+      @Param("fechaDesde") LocalDate fechaDesde,
+      @Param("fechaHasta") LocalDate fechaHasta);
+
+  @Query(
       "SELECT i FROM InstanciaVuelo i WHERE "
           + "i.vueloProgramado.origen.id = :origenId "
           + "AND i.vueloProgramado.destino.id = :destinoId "

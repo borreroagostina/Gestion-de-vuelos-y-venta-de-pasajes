@@ -21,6 +21,7 @@
         <a class="btn secondary" th:href="@{/}">Inicio público</a>
         <a class="btn" th:href="@{/admin/catalogo}">Catálogo</a>
         <a class="btn" th:href="@{/admin/vuelos}">Gestión de Vuelos</a>
+        <a class="btn" th:href="@{/admin/reportes/ocupacion}">Reporte de ocupación</a>
         <form method="post" th:action="@{/logout}" style="display: inline;">
             <button type="submit" class="btn secondary" style="border: none; cursor: pointer; padding: 0.7rem 1rem;">
                 Cerrar sesión
@@ -38,6 +39,7 @@
         <ul>
             <li><a th:href="@{/admin/catalogo}">Catálogo de aeropuertos y aeronaves</a></li>
             <li><a th:href="@{/admin/vuelos}">Administración y programación de vuelos</a></li>
+            <li><a th:href="@{/admin/reportes/ocupacion}">Reporte de ocupación</a></li>
         </ul>
     </div>
 

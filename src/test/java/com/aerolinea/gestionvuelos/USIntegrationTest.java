@@ -1,6 +1,7 @@
 package com.aerolinea.gestionvuelos;
 
 import com.aerolinea.gestionvuelos.dto.FormValidationIssue;
+import com.aerolinea.gestionvuelos.dto.OcupacionVueloDto;
 import com.aerolinea.gestionvuelos.dto.PasajeroViajeForm;
 import com.aerolinea.gestionvuelos.dto.ReservaCheckoutContext;
 import com.aerolinea.gestionvuelos.dto.ResumenCompraDto;
@@ -9,6 +10,7 @@ import com.aerolinea.gestionvuelos.model.Aeropuerto;
 import com.aerolinea.gestionvuelos.model.Asiento;
 import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
 import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
+import com.aerolinea.gestionvuelos.model.ReservaAsiento;
 import com.aerolinea.gestionvuelos.model.ReservaTemporal;
 import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
@@ -24,6 +26,7 @@ import com.aerolinea.gestionvuelos.repository.VueloProgramadoRepository;
 import com.aerolinea.gestionvuelos.service.BookingService;
 import com.aerolinea.gestionvuelos.service.CheckoutService;
 import com.aerolinea.gestionvuelos.service.FlightService;
+import com.aerolinea.gestionvuelos.service.OcupacionReportService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -62,6 +65,8 @@ public class USIntegrationTest {
   @Autowired private BookingService bookingService;
 
   @Autowired private CheckoutService checkoutService;
+
+  @Autowired private OcupacionReportService ocupacionReportService;
 
   @Autowired private VueloProgramadoRepository vueloRepo;
 
@@ -397,6 +402,36 @@ public class USIntegrationTest {
     Assert.assertEquals(new BigDecimal("420.00"), resumen.impuestos());
     Assert.assertEquals(new BigDecimal("2420.00"), resumen.total());
     Assert.assertEquals(2, resumen.pasajeros().size());
+  }
+
+  @Test
+  @Transactional
+  public void testUs18ReporteFiltraVueloClaseYFechaYCalculaOcupacion() {
+    final VueloProgramado vuelo = crearVueloGenerico("US18OCC");
+    final InstanciaVuelo instancia = flightService.listarInstanciasDeVuelo(vuelo.getId()).get(0);
+    final Asiento asientoEconomy =
+        bookingService.listarAsientosDeInstancia(instancia.getId()).stream()
+            .filter(asiento -> "ECONOMY".equals(asiento.getClase()))
+            .findFirst()
+            .orElseThrow();
+    final ReservaTemporal reserva =
+        bookingService.reservarAsientos(
+            testUser.getId(), "us18-occupancy-session", List.of(asientoEconomy.getId()));
+    final ReservaAsiento reservaAsiento =
+        reservaAsientoRepo.findByReservaTemporalId(reserva.getId()).get(0);
+    reservaAsiento.setEstado(EstadoReservaAsiento.VENDIDO);
+    reservaAsientoRepo.save(reservaAsiento);
+
+    final List<OcupacionVueloDto> reporte =
+        ocupacionReportService.generarReporte(
+            vuelo.getId(), "ECONOMY", instancia.getFechaSalida(), instancia.getFechaSalida());
+
+    Assert.assertEquals(1, reporte.size());
+    Assert.assertEquals(vuelo.getCodigoVuelo(), reporte.get(0).codigoVuelo());
+    Assert.assertEquals("ECONOMY", reporte.get(0).clase());
+    Assert.assertEquals(1L, reporte.get(0).vendidos());
+    Assert.assertEquals(BOEING_SEATS_ECO, reporte.get(0).capacidad());
+    Assert.assertEquals(new BigDecimal("0.67"), reporte.get(0).porcentajeOcupacion());
   }
 
   @Test

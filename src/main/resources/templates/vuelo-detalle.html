@@ -69,7 +69,7 @@
         <div class="grid-vuelo">
             <div class="clase-card">
                 <h3>Economy</h3>
-                <p><strong>Precio:</strong> <span th:text="|$ ${vuelo.precioEconomy}|"></span></p>
+                <p><strong>Precio:</strong> <span th:text="|USD ${vuelo.precioEconomy}|"></span></p>
                 <p th:if="${dispEconomy > 0}">
                     <strong>Disponibles:</strong> <span th:text="${dispEconomy}"></span>
                     <span class="baja-disp" th:if="${dispEconomy < umbralBajaDisp}">¡Últimos lugares disponibles!</span>
@@ -79,7 +79,7 @@
             </div>
             <div class="clase-card">
                 <h3>Primera Clase</h3>
-                <p><strong>Precio:</strong> <span th:text="|$ ${vuelo.precioPrimera}|"></span></p>
+                <p><strong>Precio:</strong> <span th:text="|USD ${vuelo.precioPrimera}|"></span></p>
                 <p th:if="${dispPrimera > 0}">
                     <strong>Disponibles:</strong> <span th:text="${dispPrimera}"></span>
                     <span class="baja-disp" th:if="${dispPrimera < umbralBajaDisp}">¡Últimos lugares disponibles!</span>

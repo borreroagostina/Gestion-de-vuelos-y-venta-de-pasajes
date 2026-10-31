@@ -10,21 +10,34 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.aerolinea.gestionvuelos.config.SecurityConfig;
 import com.aerolinea.gestionvuelos.controller.AdminCatalogController;
 import com.aerolinea.gestionvuelos.controller.AdminController;
+import com.aerolinea.gestionvuelos.controller.AdminOccupancyReportController;
 import com.aerolinea.gestionvuelos.controller.CounterEmployeeController;
 import com.aerolinea.gestionvuelos.controller.HomeController;
 import com.aerolinea.gestionvuelos.controller.LoginController;
 import com.aerolinea.gestionvuelos.controller.PassengerController;
+import com.aerolinea.gestionvuelos.dto.OcupacionVueloDto;
 import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
+<<<<<<< Updated upstream
 import com.aerolinea.gestionvuelos.service.*;
 
+=======
+import com.aerolinea.gestionvuelos.service.CatalogService;
+import com.aerolinea.gestionvuelos.service.CheckoutPaymentService;
+import com.aerolinea.gestionvuelos.service.OcupacionReportService;
+import com.aerolinea.gestionvuelos.service.PassengerCheckoutService;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+>>>>>>> Stashed changes
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,10 +57,17 @@ import org.springframework.test.web.servlet.MvcResult;
   PassengerController.class,
   CounterEmployeeController.class,
   AdminController.class,
-  AdminCatalogController.class
+  AdminCatalogController.class,
+  AdminOccupancyReportController.class
 })
 @Import(SecurityConfig.class)
 class SecurityAccessControlTest {
+
+  private static final long REPORTE_VUELO_ID = 7L;
+  private static final long REPORTE_ASIENTOS_VENDIDOS = 25L;
+  private static final LocalDate REPORTE_FECHA_DESDE = LocalDate.parse("2026-10-01");
+  private static final LocalDate REPORTE_FECHA_HASTA = LocalDate.parse("2026-10-31");
+  private static final LocalDate REPORTE_FECHA_SALIDA = LocalDate.parse("2026-10-15");
 
   @Autowired private MockMvc mockMvc;
 
@@ -61,9 +81,13 @@ class SecurityAccessControlTest {
 
   @MockitoBean private CheckoutPaymentService checkoutPaymentService;
 
+<<<<<<< Updated upstream
   @MockitoBean private FlightService flightService;
 
   @MockitoBean private MyTicketsService myTicketsService;
+=======
+  @MockitoBean private OcupacionReportService ocupacionReportService;
+>>>>>>> Stashed changes
 
   @BeforeEach
   void setUp() {
@@ -111,9 +135,53 @@ class SecurityAccessControlTest {
   @WithMockUser(roles = "PASAJERO")
   void shouldRejectDirectAccessToAdminUrlsForPassenger() throws Exception {
     mockMvc
-        .perform(get("/admin"))
+        .perform(get("/admin/reportes/ocupacion"))
         .andExpect(status().isForbidden())
         .andExpect(forwardedUrl("/acceso-denegado"));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void adminCanViewOccupancyReport() throws Exception {
+    when(ocupacionReportService.listarVuelos()).thenReturn(List.of());
+    when(ocupacionReportService.generarReporte(null, null, null, null)).thenReturn(List.of());
+
+    mockMvc
+        .perform(get("/admin/reportes/ocupacion"))
+        .andExpect(status().isOk())
+        .andExpect(content().string(containsString("Reporte de ocupación")))
+        .andExpect(
+            content().string(containsString("No hay vuelos para los filtros seleccionados.")));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void adminCanDownloadOccupancyReportAsCsv() throws Exception {
+    when(ocupacionReportService.generarReporte(
+            REPORTE_VUELO_ID, "ECONOMY", REPORTE_FECHA_DESDE, REPORTE_FECHA_HASTA))
+        .thenReturn(
+            List.of(
+                new OcupacionVueloDto(
+                    "AR101",
+                    REPORTE_FECHA_SALIDA,
+                    "EZE",
+                    "COR",
+                    "ECONOMY",
+                    REPORTE_ASIENTOS_VENDIDOS,
+                    100,
+                    new BigDecimal("25.00"))));
+
+    mockMvc
+        .perform(
+            get("/admin/reportes/ocupacion/exportar")
+                .param("vueloId", "7")
+                .param("clase", "ECONOMY")
+                .param("fechaDesde", "2026-10-01")
+                .param("fechaHasta", "2026-10-31"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Disposition", containsString("reporte-ocupacion.csv")))
+        .andExpect(content().string(containsString("\"AR101\",\"2026-10-15\",\"EZE\",\"COR\"")))
+        .andExpect(content().string(containsString("25,100,25.00")));
   }
 
   @Test

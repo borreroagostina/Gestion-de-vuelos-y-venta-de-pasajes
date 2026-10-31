@@ -1,5 +1,6 @@
 package com.aerolinea.gestionvuelos.repository;
 
+import com.aerolinea.gestionvuelos.dto.AsientosVendidosPorClase;
 import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
 import com.aerolinea.gestionvuelos.model.ReservaAsiento;
 import jakarta.persistence.LockModeType;
@@ -36,4 +37,31 @@ public interface ReservaAsientoRepository extends JpaRepository<ReservaAsiento, 
       @Param("clase") String clase,
       @Param("estado") EstadoReservaAsiento estado,
       @Param("ahora") LocalDateTime ahora);
+
+  @Query(
+      "SELECT COUNT(ra) FROM ReservaAsiento ra "
+          + "WHERE ra.asiento.instanciaVuelo.id = :instanciaId "
+          + "AND UPPER(ra.asiento.clase) = :clase "
+          + "AND ra.estado = :estado")
+  long countByInstanciaAndClaseAndEstado(
+      @Param("instanciaId") Long instanciaId,
+      @Param("clase") String clase,
+      @Param("estado") EstadoReservaAsiento estado);
+
+  @Query(
+      "SELECT DISTINCT ra.usuario.email FROM ReservaAsiento ra "
+          + "WHERE ra.asiento.instanciaVuelo.id = :instanciaId "
+          + "AND ra.estado = :estado")
+  List<String> findDistinctEmailsByInstanciaAndEstado(
+      @Param("instanciaId") Long instanciaId, @Param("estado") EstadoReservaAsiento estado);
+
+  @Query(
+      "SELECT new com.aerolinea.gestionvuelos.dto.AsientosVendidosPorClase("
+          + "ra.asiento.instanciaVuelo.id, UPPER(ra.asiento.clase), "
+          + "COUNT(DISTINCT ra.asiento.id)) "
+          + "FROM ReservaAsiento ra "
+          + "WHERE ra.estado = :estado AND ra.asiento.instanciaVuelo.id IN :instanciaIds "
+          + "GROUP BY ra.asiento.instanciaVuelo.id, UPPER(ra.asiento.clase)")
+  List<AsientosVendidosPorClase> contarVendidosPorInstancias(
+      @Param("instanciaIds") List<Long> instanciaIds, @Param("estado") EstadoReservaAsiento estado);
 }

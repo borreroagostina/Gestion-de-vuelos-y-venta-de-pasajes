@@ -44,7 +44,7 @@
             <p><strong>Itinerario:</strong> <span th:text="${resumen.itinerario}">8:00am → 9:30am</span></p>
             <p><strong>Clase:</strong> <span th:text="${resumen.clase}">Economy</span></p>
             <p><strong>Asientos:</strong> <span th:text="${#strings.listJoin(resumen.asientos, ', ')}">07A, 07B</span></p>
-            <p><strong>Precio unitario:</strong> <span th:text="|$ ${resumen.precioUnitario}|">$ 1000.00</span></p>
+            <p><strong>Precio unitario:</strong> <span th:text="|USD ${resumen.precioUnitario}|">USD 1000.00</span></p>
           </div>
         </div>
       </div>
@@ -84,15 +84,15 @@
           <tbody>
             <tr>
               <td>Subtotal</td>
-              <td th:text="|$ ${resumen.subtotal}|">$ 2000.00</td>
+              <td th:text="|USD ${resumen.subtotal}|">USD 2000.00</td>
             </tr>
             <tr>
               <td>IVA 21%</td>
-              <td th:text="|$ ${resumen.impuestos}|">$ 420.00</td>
+              <td th:text="|USD ${resumen.impuestos}|">USD 420.00</td>
             </tr>
             <tr class="total">
               <td>Total</td>
-              <td th:text="|$ ${resumen.total}|">$ 2420.00</td>
+              <td th:text="|USD ${resumen.total}|">USD 2420.00</td>
             </tr>
           </tbody>
         </table>

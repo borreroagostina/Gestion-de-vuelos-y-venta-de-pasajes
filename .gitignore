@@ -7,7 +7,6 @@
 /.mvn/wrapper/*.jar
 /.env
 .env
-!.env
 .DS_Store
 Thumbs.db
 .vscode/

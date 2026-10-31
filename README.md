@@ -80,6 +80,8 @@ Luego de correr las migraciones (arranque normal de la app), quedan creadas esta
 - Administrador: `admin@aerolinea.local` / `admin123`
 - Empleado de mostrador: `empleado@aerolinea.local` / `emp123`
 
+El administrador puede consultar el reporte de ocupación desde **Reporte de ocupación** en su panel (`/admin/reportes/ocupacion`). El reporte permite filtrar por vuelo, clase y rango de fechas de salida; se descarga en formato CSV con el mismo conjunto de filtros.
+
 ### 5. Verificar la calidad del código
 
 ```bash
@@ -110,7 +112,13 @@ Flyway las ejecuta en orden numérico y guarda el historial en la base de datos 
 
 ## Variables de entorno
 
-Usá `.env.example` como referencia y mantené las claves reales únicamente en `.env`. Para probar Stripe Checkout, creá una cuenta Stripe en modo test y configurá `STRIPE_SECRET_KEY` con la clave secreta `sk_test_...`. El checkout redirige a Stripe Checkout alojado; la plataforma no recibe ni almacena datos de tarjeta.
+Copiá `.env.example` a `.env` en la raíz del proyecto y mantené las claves reales únicamente en ese archivo local. En PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Los precios de los vuelos se cargan y cobran en dólares estadounidenses (USD); asegurate de ingresar en USD los importes configurados para Economy y Primera Clase. Para probar Stripe Checkout, creá una cuenta Stripe en modo test y configurá `STRIPE_SECRET_KEY` con una clave secreta `sk_test_...`. No uses una clave publicable (`pk_test_...`) en su lugar: el servidor necesita la clave secreta para crear y consultar sesiones. El checkout redirige a Stripe Checkout alojado; la plataforma no recibe ni almacena datos de tarjeta.
 
 Para recibir webhooks en localhost, instalá Stripe CLI, iniciá sesión y ejecutá:
 
@@ -118,7 +126,9 @@ Para recibir webhooks en localhost, instalá Stripe CLI, iniciá sesión y ejecu
 stripe listen --forward-to localhost:8080/api/pagos/stripe/webhook
 ```
 
-La CLI imprime secret webhook `whsec_...`; guardalo como `STRIPE_WEBHOOK_SECRET` en `.env` y reiniciá la aplicación. `APP_BASE_URL` puede permanecer en `http://localhost:8080` para los retornos del navegador. Las sesiones de Checkout de Stripe tienen un vencimiento mínimo mayor que el bloqueo temporal de asientos; por eso el backend intenta expirar la sesión al vencer la reserva y valida nuevamente el vencimiento antes de consolidar la venta. Si llega tarde una confirmación aprobada, se inicia el flujo de reembolso.
+La CLI imprime un secreto de webhook `whsec_...`; guardalo como `STRIPE_WEBHOOK_SECRET` en `.env` y reiniciá la aplicación. Dejá `APP_BASE_URL=http://localhost:8080` para los retornos del navegador cuando ejecutes localmente. Mantené Stripe CLI activo mientras probás para recibir las confirmaciones. El retorno del navegador también consulta el estado directamente a Stripe; el webhook permite procesar la confirmación aunque el comprador no vuelva a la aplicación. Las sesiones de Checkout de Stripe tienen un vencimiento mínimo mayor que el bloqueo temporal de asientos; por eso el backend intenta expirar la sesión al vencer la reserva y valida nuevamente el vencimiento antes de consolidar la venta. Si llega tarde una confirmación aprobada, se inicia el flujo de reembolso.
+
+No agregues `.env` al repositorio ni reutilices claves que hayan sido subidas a Git, incluso si son de prueba: revocalas desde Stripe y generá otras nuevas.
 
 Flyway aplica `V11__create_payment_orders_and_email_outbox.sql` para registrar órdenes, transacciones externas y envíos de correo pendientes. El worker reintenta automáticamente los emails fallidos; asegurate de configurar las variables SMTP para que los envíos puedan completarse.
 

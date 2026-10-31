@@ -8,11 +8,13 @@ import static org.mockito.Mockito.when;
 
 import com.aerolinea.gestionvuelos.model.Aeronave;
 import com.aerolinea.gestionvuelos.model.Aeropuerto;
+import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
 import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
 import com.aerolinea.gestionvuelos.model.VueloProgramado;
 import com.aerolinea.gestionvuelos.repository.AeronaveRepository;
 import com.aerolinea.gestionvuelos.repository.AeropuertoRepository;
 import com.aerolinea.gestionvuelos.repository.InstanciaVueloRepository;
+import com.aerolinea.gestionvuelos.repository.ReservaAsientoRepository;
 import com.aerolinea.gestionvuelos.repository.VueloProgramadoRepository;
 import com.aerolinea.gestionvuelos.service.BookingService;
 import com.aerolinea.gestionvuelos.service.FlightService;
@@ -46,6 +48,11 @@ public class FlightServiceValidationTest {
   private static final int HORA_SALIDA_23 = 23;
   private static final int HORA_LLEGADA_12 = 12;
   private static final int HORA_MODIFICADA_14 = 14;
+  private static final int HORA_MODIFICADA_LLEGADA_16 = 16;
+  private static final long ASIENTOS_DISPONIBLES_ECO = 149L;
+  private static final long ASIENTOS_DISPONIBLES_PRIMERA = 19L;
+  private static final int ASIENTOS_DISPONIBLES_ECO_INT = 149;
+  private static final int ASIENTOS_DISPONIBLES_PRIMERA_INT = 19;
   private static final int ASIENTOS_VENDIDOS_50 = 50;
   private static final int DIAS_OFFSET_15 = 15;
   private static final int SEATS_ECO = 150;
@@ -53,6 +60,7 @@ public class FlightServiceValidationTest {
 
   @Mock private VueloProgramadoRepository vueloRepo;
   @Mock private InstanciaVueloRepository instanciaRepo;
+  @Mock private ReservaAsientoRepository reservaAsientoRepo;
   @Mock private AeropuertoRepository aeroRepo;
   @Mock private AeronaveRepository aeronaveRepo;
   @Mock private NotificationService notificationService;
@@ -72,6 +80,7 @@ public class FlightServiceValidationTest {
         new FlightService(
             vueloRepo,
             instanciaRepo,
+            reservaAsientoRepo,
             aeroRepo,
             aeronaveRepo,
             notificationService,
@@ -222,12 +231,9 @@ public class FlightServiceValidationTest {
         .thenReturn(List.of(instFutura));
 
     // Simulamos que ya se vendieron 50 pasajes Economy
-    when(jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM ventas WHERE vuelo_id = ? AND UPPER(clase) = ?",
-            Integer.class,
-            ID_INSTANCIA_500,
-            "ECONOMY"))
-        .thenReturn(ASIENTOS_VENDIDOS_50);
+    when(reservaAsientoRepo.countByInstanciaAndClaseAndEstado(
+            ID_INSTANCIA_500, "ECONOMY", EstadoReservaAsiento.VENDIDO))
+        .thenReturn((long) ASIENTOS_VENDIDOS_50);
 
     // Intentamos cambiar a un avión con solo 30 asientos Economy (menor a los 50 vendidos)
     final Aeronave avionChico = new Aeronave("Avion Chico", "Fabricante", "CHICO", 30, 10);
@@ -283,6 +289,66 @@ public class FlightServiceValidationTest {
   }
 
   @Test
+  public void shouldUpdateAndNotifySoldInstanceWhenScheduleChanges() {
+    final LocalDate hoy = LocalDate.now();
+    final VueloProgramado existingFlight = new VueloProgramado();
+    existingFlight.setId(ID_VUELO_101);
+    existingFlight.setCodigoVuelo("AR201");
+    existingFlight.setOrigen(aeroOrigen);
+    existingFlight.setDestino(aeroDestino);
+    existingFlight.setAeronave(aeronave);
+    existingFlight.setFechaInicioVenta(hoy);
+    existingFlight.setFechaFinVenta(hoy.plusDays(5));
+    existingFlight.setDiasSemana("MONDAY");
+    existingFlight.setPrecioEconomy(PRECIO_500);
+    existingFlight.setPrecioPrimera(PRECIO_900);
+    existingFlight.setHoraSalida(LocalTime.of(10, 0));
+    existingFlight.setHoraLlegada(LocalTime.of(HORA_LLEGADA_12, 0));
+
+    final InstanciaVuelo soldInstance = new InstanciaVuelo();
+    soldInstance.setId(ID_INSTANCIA_500);
+    soldInstance.setVueloProgramado(existingFlight);
+    soldInstance.setFechaSalida(hoy.plusDays(2));
+    soldInstance.setFechaLlegada(hoy.plusDays(2));
+    soldInstance.setHoraSalida(LocalTime.of(10, 0));
+    soldInstance.setHoraLlegada(LocalTime.of(HORA_LLEGADA_12, 0));
+
+    when(vueloRepo.findById(ID_VUELO_101)).thenReturn(java.util.Optional.of(existingFlight));
+    when(vueloRepo.save(existingFlight)).thenReturn(existingFlight);
+    when(instanciaRepo.findByVueloProgramadoIdAndFechaSalidaGreaterThanEqual(ID_VUELO_101, hoy))
+        .thenReturn(List.of(soldInstance));
+    when(reservaAsientoRepo.countByInstanciaAndClaseAndEstado(
+            ID_INSTANCIA_500, "ECONOMY", EstadoReservaAsiento.VENDIDO))
+        .thenReturn(1L);
+    when(reservaAsientoRepo.countByInstanciaAndClaseAndEstado(
+            ID_INSTANCIA_500, "PRIMERA", EstadoReservaAsiento.VENDIDO))
+        .thenReturn(0L);
+
+    final VueloProgramado modifiedFlight = new VueloProgramado();
+    modifiedFlight.setId(ID_VUELO_101);
+    modifiedFlight.setCodigoVuelo("AR201");
+    modifiedFlight.setOrigen(aeroOrigen);
+    modifiedFlight.setDestino(aeroDestino);
+    modifiedFlight.setAeronave(aeronave);
+    modifiedFlight.setFechaInicioVenta(hoy);
+    modifiedFlight.setFechaFinVenta(hoy.plusDays(5));
+    modifiedFlight.setDiasSemana("MONDAY");
+    modifiedFlight.setPrecioEconomy(PRECIO_500);
+    modifiedFlight.setPrecioPrimera(PRECIO_900);
+    modifiedFlight.setHoraSalida(LocalTime.of(HORA_MODIFICADA_14, 0));
+    modifiedFlight.setHoraLlegada(LocalTime.of(HORA_MODIFICADA_LLEGADA_16, 0));
+
+    flightService.modificarVuelo(modifiedFlight);
+
+    assertEquals(LocalTime.of(HORA_MODIFICADA_14, 0), soldInstance.getHoraSalida());
+    assertEquals(LocalTime.of(HORA_MODIFICADA_LLEGADA_16, 0), soldInstance.getHoraLlegada());
+    verify(notificationService)
+        .notificarCambioHorario(
+            soldInstance, LocalTime.of(10, 0), LocalTime.of(HORA_LLEGADA_12, 0));
+    verify(instanciaRepo).save(soldInstance);
+  }
+
+  @Test
   public void shouldReturnEmptyPageWhenNoFlightsMatchSearchCriteria() {
     final LocalDate maniana = LocalDate.now().plusDays(1);
     final org.springframework.data.domain.Pageable pageable =
@@ -331,8 +397,10 @@ public class FlightServiceValidationTest {
     when(instanciaRepo.buscarVuelosPublicos(
             ID_EZE, ID_MIA, departure, departure, "HORA_ASC", pageable))
         .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(instance)));
-    when(bookingService.contarDisponibles(ID_INSTANCIA_500, "ECONOMY")).thenReturn(149L);
-    when(bookingService.contarDisponibles(ID_INSTANCIA_500, "PRIMERA")).thenReturn(19L);
+    when(bookingService.contarDisponibles(ID_INSTANCIA_500, "ECONOMY"))
+        .thenReturn(ASIENTOS_DISPONIBLES_ECO);
+    when(bookingService.contarDisponibles(ID_INSTANCIA_500, "PRIMERA"))
+        .thenReturn(ASIENTOS_DISPONIBLES_PRIMERA);
 
     final InstanciaVuelo result =
         flightService
@@ -340,7 +408,8 @@ public class FlightServiceValidationTest {
             .getContent()
             .getFirst();
 
-    assertEquals(Integer.valueOf(149), result.getAsientosDispEconomy());
-    assertEquals(Integer.valueOf(19), result.getAsientosDispPrimera());
+    assertEquals(Integer.valueOf(ASIENTOS_DISPONIBLES_ECO_INT), result.getAsientosDispEconomy());
+    assertEquals(
+        Integer.valueOf(ASIENTOS_DISPONIBLES_PRIMERA_INT), result.getAsientosDispPrimera());
   }
 }

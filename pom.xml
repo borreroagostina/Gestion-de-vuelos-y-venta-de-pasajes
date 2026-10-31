@@ -156,6 +156,22 @@
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-surefire-plugin</artifactId>
                <version>${surefire.version}</version>
+               <configuration>
+                   <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+               </configuration>
+           </plugin>
+
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-dependency-plugin</artifactId>
+               <executions>
+                   <execution>
+                       <id>mockito-agent-path</id>
+                       <goals>
+                           <goal>properties</goal>
+                       </goals>
+                   </execution>
+               </executions>
            </plugin>
 
            <plugin>

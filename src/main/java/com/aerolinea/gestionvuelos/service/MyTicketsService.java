@@ -71,7 +71,7 @@ public class MyTicketsService {
 
   @Transactional(readOnly = true)
   public byte[] obtenerFacturaPdf(String codigoOrden, String emailUsuario) {
-    PaymentOrder order =
+    final PaymentOrder order =
         paymentOrderRepository
             .findOwnedByOrderCodeAndStatus(codigoOrden, emailUsuario, PaymentOrderStatus.APPROVED)
             .orElseThrow(
@@ -79,14 +79,14 @@ public class MyTicketsService {
                     new IllegalArgumentException(
                         "No se encontró la factura o no pertenece al usuario."));
 
-    List<ReservaAsiento> reservas =
+    final List<ReservaAsiento> reservas =
         reservaAsientoRepository.findByReservaTemporalId(order.getReservaTemporal().getId());
     return pdfGeneratorService.generarFacturaPdf(order, reservas);
   }
 
   @Transactional(readOnly = true)
   public byte[] obtenerPasajePdf(Long reservaAsientoId, String emailUsuario) {
-    ReservaAsiento reserva =
+    final ReservaAsiento reserva =
         reservaAsientoRepository
             .findById(reservaAsientoId)
             .orElseThrow(
@@ -97,7 +97,7 @@ public class MyTicketsService {
       throw new IllegalArgumentException("No tiene permisos para descargar este pasaje.");
     }
 
-    PaymentOrder order =
+    final PaymentOrder order =
         paymentOrderRepository
             .findOwnedByReservaTemporalIdAndStatus(
                 reserva.getReservaTemporal().getId(), emailUsuario, PaymentOrderStatus.APPROVED)

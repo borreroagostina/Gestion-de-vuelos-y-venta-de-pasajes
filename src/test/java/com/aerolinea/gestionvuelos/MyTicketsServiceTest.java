@@ -1,11 +1,28 @@
 package com.aerolinea.gestionvuelos;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.aerolinea.gestionvuelos.dto.HistorialCompraDto;
-import com.aerolinea.gestionvuelos.model.*;
+import com.aerolinea.gestionvuelos.model.Aeropuerto;
+import com.aerolinea.gestionvuelos.model.Asiento;
+import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
+import com.aerolinea.gestionvuelos.model.PaymentOrder;
+import com.aerolinea.gestionvuelos.model.PaymentOrderStatus;
+import com.aerolinea.gestionvuelos.model.ReservaAsiento;
+import com.aerolinea.gestionvuelos.model.ReservaTemporal;
+import com.aerolinea.gestionvuelos.model.Usuario;
+import com.aerolinea.gestionvuelos.model.VueloProgramado;
 import com.aerolinea.gestionvuelos.repository.PaymentOrderRepository;
 import com.aerolinea.gestionvuelos.repository.ReservaAsientoRepository;
 import com.aerolinea.gestionvuelos.service.MyTicketsService;
@@ -32,35 +49,35 @@ class MyTicketsServiceTest {
 
   @Test
   void testObtenerHistorialComprasExitoso() {
-    String email = "pasajero@test.com";
-    PaymentOrder order = new PaymentOrder();
+    final String email = "pasajero@test.com";
+    final PaymentOrder order = new PaymentOrder();
     order.setOrderCode("ORD-123");
     order.setAmount(new BigDecimal("1000.00"));
 
-    ReservaTemporal resTemp = new ReservaTemporal();
+    final ReservaTemporal resTemp = new ReservaTemporal();
     resTemp.setId(10L);
     order.setReservaTemporal(resTemp);
 
-    Aeropuerto orig = new Aeropuerto();
+    final Aeropuerto orig = new Aeropuerto();
     orig.setCiudad("Buenos Aires");
-    Aeropuerto dest = new Aeropuerto();
+    final Aeropuerto dest = new Aeropuerto();
     dest.setCiudad("Mendoza");
 
-    VueloProgramado vp = new VueloProgramado();
+    final VueloProgramado vp = new VueloProgramado();
     vp.setCodigoVuelo("AR1234");
     vp.setOrigen(orig);
     vp.setDestino(dest);
 
-    InstanciaVuelo iv = new InstanciaVuelo();
+    final InstanciaVuelo iv = new InstanciaVuelo();
     iv.setVueloProgramado(vp);
     iv.setFechaSalida(LocalDate.now().plusDays(1));
     iv.setHoraSalida(LocalTime.of(10, 0));
 
-    Asiento asiento = new Asiento();
+    final Asiento asiento = new Asiento();
     asiento.setNumero("12A");
     asiento.setInstanciaVuelo(iv);
 
-    ReservaAsiento ra = new ReservaAsiento();
+    final ReservaAsiento ra = new ReservaAsiento();
     ra.setId(100L);
     ra.setAsiento(asiento);
     ra.setNombrePasajero("Juan");
@@ -70,7 +87,7 @@ class MyTicketsServiceTest {
     when(paymentOrderRepository.findHistorialUsuario(eq(email), any())).thenReturn(List.of(order));
     when(reservaAsientoRepository.findByReservaTemporalId(10L)).thenReturn(List.of(ra));
 
-    List<HistorialCompraDto> resultado = myTicketsService.obtenerHistorialCompras(email);
+    final List<HistorialCompraDto> resultado = myTicketsService.obtenerHistorialCompras(email);
 
     assertEquals(1, resultado.size());
     assertEquals("ORD-123", resultado.get(0).orderCode());
@@ -80,15 +97,15 @@ class MyTicketsServiceTest {
 
   @Test
   void testObtenerPasajePdfNoOwnerThrowsException() {
-    String email = "otro@test.com";
+    final String email = "otro@test.com";
 
-    Usuario usuarioOriginal = new Usuario();
+    final Usuario usuarioOriginal = new Usuario();
     usuarioOriginal.setEmail("dueno@test.com");
 
-    ReservaTemporal resTemp = new ReservaTemporal();
+    final ReservaTemporal resTemp = new ReservaTemporal();
     resTemp.setUsuario(usuarioOriginal);
 
-    ReservaAsiento ra = new ReservaAsiento();
+    final ReservaAsiento ra = new ReservaAsiento();
     ra.setId(100L);
     ra.setReservaTemporal(resTemp);
 
@@ -102,11 +119,11 @@ class MyTicketsServiceTest {
 
   @Test
   void testObtenerFacturaPdfSoloParaOrdenAprobadaDelUsuario() {
-    String email = "pasajero@test.com";
-    PaymentOrder order = new PaymentOrder();
+    final String email = "pasajero@test.com";
+    final PaymentOrder order = new PaymentOrder();
     order.setOrderCode("ORD-123");
     order.setStatus(PaymentOrderStatus.APPROVED);
-    ReservaTemporal reservaTemporal = new ReservaTemporal();
+    final ReservaTemporal reservaTemporal = new ReservaTemporal();
     reservaTemporal.setId(10L);
     order.setReservaTemporal(reservaTemporal);
     when(paymentOrderRepository.findOwnedByOrderCodeAndStatus(
@@ -134,16 +151,16 @@ class MyTicketsServiceTest {
 
   @Test
   void testObtenerPasajePdfSoloParaReservaDelUsuarioConOrdenAprobada() {
-    String email = "pasajero@test.com";
-    Usuario usuario = new Usuario();
+    final String email = "pasajero@test.com";
+    final Usuario usuario = new Usuario();
     usuario.setEmail(email);
-    ReservaTemporal reservaTemporal = new ReservaTemporal();
+    final ReservaTemporal reservaTemporal = new ReservaTemporal();
     reservaTemporal.setId(10L);
     reservaTemporal.setUsuario(usuario);
-    ReservaAsiento reserva = new ReservaAsiento();
+    final ReservaAsiento reserva = new ReservaAsiento();
     reserva.setId(100L);
     reserva.setReservaTemporal(reservaTemporal);
-    PaymentOrder order = new PaymentOrder();
+    final PaymentOrder order = new PaymentOrder();
     order.setStatus(PaymentOrderStatus.APPROVED);
     when(reservaAsientoRepository.findById(100L)).thenReturn(Optional.of(reserva));
     when(paymentOrderRepository.findOwnedByReservaTemporalIdAndStatus(

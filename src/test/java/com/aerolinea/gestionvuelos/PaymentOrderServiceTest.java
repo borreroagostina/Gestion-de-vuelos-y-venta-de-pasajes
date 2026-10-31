@@ -80,9 +80,13 @@ public class PaymentOrderServiceTest {
 
   @Before
   public void setUp() {
-    origin = airportRepository.save(new Aeropuerto("EZE", "Ezeiza", "Buenos Aires", "Argentina"));
+    final String suffix = Long.toString(System.nanoTime() % 1_000_000L);
+    origin =
+        airportRepository.save(
+            new Aeropuerto("E" + suffix, "Ezeiza", "Buenos Aires", "Argentina"));
     destination =
-        airportRepository.save(new Aeropuerto("COR", "Pajas Blancas", "Córdoba", "Argentina"));
+        airportRepository.save(
+            new Aeropuerto("C" + suffix, "Pajas Blancas", "Córdoba", "Argentina"));
     aircraft =
         aircraftRepository.save(
             new Aeronave("Test Jet", "Test", "TJ" + System.nanoTime(), ECONOMY_SEAT_COUNT, 2));

@@ -58,6 +58,7 @@ public class PaymentOrderServiceTest {
   private static final int FIRST_PASSENGER_BIRTH_YEAR = 1990;
   private static final int SECOND_PASSENGER_BIRTH_YEAR = 1988;
   private static final int FLIGHT_ARRIVAL_HOUR = 12;
+  private static final long AIRPORT_SUFFIX_MODULO = 100_000_000L;
 
   @Autowired private PaymentOrderService paymentOrderService;
   @Autowired private BookingService bookingService;
@@ -80,9 +81,13 @@ public class PaymentOrderServiceTest {
 
   @Before
   public void setUp() {
-    origin = airportRepository.save(new Aeropuerto("EZE", "Ezeiza", "Buenos Aires", "Argentina"));
+    // Otros tests commitean aeropuertos en la misma BD H2: se usan códigos únicos.
+    final String suffix = String.valueOf(System.nanoTime() % AIRPORT_SUFFIX_MODULO);
+    origin =
+        airportRepository.save(new Aeropuerto("E" + suffix, "Ezeiza", "Buenos Aires", "Argentina"));
     destination =
-        airportRepository.save(new Aeropuerto("COR", "Pajas Blancas", "Córdoba", "Argentina"));
+        airportRepository.save(
+            new Aeropuerto("C" + suffix, "Pajas Blancas", "Córdoba", "Argentina"));
     aircraft =
         aircraftRepository.save(
             new Aeronave("Test Jet", "Test", "TJ" + System.nanoTime(), ECONOMY_SEAT_COUNT, 2));

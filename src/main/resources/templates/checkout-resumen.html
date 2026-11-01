@@ -18,8 +18,9 @@
       .actions { display: flex; justify-content: space-between; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
       .alert-error { padding: 0.8rem; margin: 1rem 0; background: #fee2e2; color: #991b1b; border-radius: 6px; }
     </style>
-  </head>
-  <body>
+  <link rel="stylesheet" th:href="@{/css/tema.css}" />
+</head>
+  <body class="bg-checkout">
     <div class="container">
       <!-- Muestra errores de pago si la tarjeta es rechazada -->
       <div th:if="${error}" class="alert-error" th:text="${error}"></div>

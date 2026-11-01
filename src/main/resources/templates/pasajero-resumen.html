@@ -18,8 +18,9 @@
       .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; background: #e0f2fe; color: #0c4a6e; }
       .actions { display: flex; gap: 1rem; flex-wrap: wrap; }
     </style>
-  </head>
-  <body>
+  <link rel="stylesheet" th:href="@{/css/tema.css}" />
+</head>
+  <body class="bg-checkout">
       <div class="container">
       <div th:if="${error}" class="alert" style="background: #fee2e2; color: #991b1b;" th:text="${error}"></div>
       <div class="actions" style="margin-bottom: 1rem;">

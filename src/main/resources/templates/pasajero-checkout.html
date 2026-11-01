@@ -20,8 +20,9 @@
       .passenger-title { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
       .summary-inline { display: flex; gap: 1rem; flex-wrap: wrap; color: #334155; font-size: 0.95rem; }
     </style>
-  </head>
-  <body>
+  <link rel="stylesheet" th:href="@{/css/tema.css}" />
+</head>
+  <body class="bg-checkout">
     <div class="container">
       <div class="actions" style="margin-bottom: 1rem;">
         <a class="btn secondary" th:href="@{/pasajero}">← Volver al panel</a>

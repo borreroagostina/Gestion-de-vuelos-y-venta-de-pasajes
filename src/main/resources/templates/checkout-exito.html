@@ -11,8 +11,9 @@
       .btn { display: inline-block; margin-top: 1rem; padding: 0.7rem 1rem; color: white; background: #0d6efd; border-radius: 8px; text-decoration: none; }
       .btn[hidden] { display: none; }
     </style>
-  </head>
-  <body>
+  <link rel="stylesheet" th:href="@{/css/tema.css}" />
+</head>
+  <body class="bg-checkout">
     <main id="payment-result" th:attr="data-order-code=${orderCode},data-status=${paymentStatus},data-status-url=@{/pasajero/checkout/orden/{code}/estado(code=${orderCode})}">
       <h1>Estado de tu compra</h1>
       <p>Código de reserva: <strong th:text="${orderCode}">código</strong></p>

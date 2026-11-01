@@ -38,7 +38,13 @@ public class SecurityConfig {
             authz ->
                 authz
                     .requestMatchers(
-                        "/", "/inicio", "/login", "/registro", "/registro/**", "/acceso-denegado")
+                        "/",
+                        "/inicio",
+                        "/login",
+                        "/registro",
+                        "/registro/**",
+                        "/acceso-denegado",
+                        "/css/**")
                     .permitAll()
                     .requestMatchers("/pasajero/**")
                     .hasRole("PASAJERO")
@@ -69,7 +75,7 @@ public class SecurityConfig {
         .sessionManagement(
             session ->
                 session
-                    .invalidSessionUrl("/login?expired")
+                    .invalidSessionUrl("/")
                     .sessionFixation(sessionFixation -> sessionFixation.migrateSession()))
         .exceptionHandling(exception -> exception.accessDeniedPage("/acceso-denegado"));
     return http.build();

@@ -4,30 +4,78 @@
     <meta charset="UTF-8" />
     <title th:text="${title}">Gestión de Vuelos</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f7fb; }
-        .container { max-width: 1050px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .nav { display: flex; gap: 0.75rem; align-items: center; justify-content: flex-end; margin-bottom: 1.5rem; flex-wrap: wrap; }
-        .btn { display: inline-block; padding: 0.6rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 6px; font-size: 0.9rem; }
-        .btn.secondary { background: #6c757d; }
-        .btn.admin { background: #dc3545; }
-        .btn-logout { padding: 0.6rem 1rem; border: none; border-radius: 6px; background: #6c757d; color: white; cursor: pointer; font-size: 0.9rem; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end; }
-        label { display: block; font-weight: bold; margin-bottom: 0.25rem; font-size: 0.85rem; }
-        select, input, button.btn-search { width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #cfd8dc; box-sizing: border-box; }
-        button.btn-search { background: #2d6cdf; color: white; border: none; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { border-bottom: 1px solid #ddd; padding: 0.75rem; text-align: left; }
-        .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
-        .error { background: #ffebee; color: #b71c1c; }
-        .info { background: #e3f2fd; color: #0d47a1; }
-        .welcome-banner { margin-bottom: 1rem; color: #495057; font-size: 0.95rem; }
+        :root { color-scheme: light; --ink: #0f2447; --muted: #5b6f94; --ocean: #1d4ed8; --coral: #38bdf8; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f4f7f5; color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; }
+        .container { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+        .site-header { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: 1.25rem 0; }
+        .brand { display: inline-flex; align-items: center; gap: 0.65rem; color: var(--ink); font-size: 1.15rem; font-weight: 800; letter-spacing: -0.04em; text-decoration: none; }
+        .brand-mark { display: grid; width: 2.4rem; height: 2.4rem; place-items: center; border-radius: 12px; background: var(--ocean); color: white; font-size: 1.25rem; transform: rotate(-8deg); }
+        .nav { display: flex; gap: 0.65rem; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+        .btn, .btn-logout { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0.65rem 1rem; border: 0; border-radius: 999px; background: var(--ocean); color: white; cursor: pointer; font: inherit; font-size: 0.9rem; font-weight: 700; text-decoration: none; transition: transform 160ms ease, background 160ms ease; }
+        .btn:hover, .btn-logout:hover { transform: translateY(-2px); background: #1e3a8a; }
+        .btn.secondary { background: white; color: var(--ink); box-shadow: inset 0 0 0 1px #dce5e2; }
+        .btn.secondary:hover { background: #dbeafe; }
+        .btn.admin { background: #1e3a8a; }
+        .btn-logout { background: #0a2150; }
+        .hero { position: relative; display: flex; min-height: 390px; align-items: center; overflow: hidden; padding: clamp(2rem, 6vw, 5rem); border-radius: 28px; background: #174756 url("https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=2000&q=85") center 48% / cover no-repeat; color: white; }
+        .hero::before { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(6, 22, 66, 0.85), rgba(10, 33, 80, 0.3) 75%), linear-gradient(0deg, rgba(6, 22, 66, 0.2), transparent 60%); content: ""; }
+        .hero-copy { position: relative; max-width: 600px; }
+        .eyebrow { margin: 0 0 0.9rem; color: #bae6fd; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+        .hero h1 { margin: 0; color: white; font-family: "Fraunces", Georgia, serif; font-size: clamp(2.7rem, 6vw, 5rem); font-weight: 500; letter-spacing: -0.055em; line-height: 0.98; }
+        .hero-copy > p:last-child { max-width: 440px; margin: 1.15rem 0 0; color: rgba(255,255,255,0.88); font-size: 1.05rem; line-height: 1.65; }
+        .card { margin: 1.5rem 0; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid #e6ece9; border-radius: 22px; background: white; box-shadow: 0 16px 45px rgba(26, 54, 59, 0.07); }
+        .search-card { position: relative; margin: -3.2rem 1.5rem 1.5rem; }
+        .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; margin-bottom: 1.25rem; }
+        .section-heading h2, .section-heading h1 { margin: 0; font-size: 1.4rem; letter-spacing: -0.03em; }
+        .section-heading p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 1rem; align-items: end; }
+        .form-grid > div { grid-column: span 2; }
+        .form-grid > div:nth-child(3), .form-grid > div:nth-child(4) { grid-column: span 1; }
+        .form-grid > div:nth-child(5) { grid-column: span 1; }
+        .form-grid > div:last-child { grid-column: span 1; }
+        label { display: block; margin-bottom: 0.45rem; color: #405563; font-size: 0.78rem; font-weight: 800; }
+        select, input, button.btn-search { width: 100%; min-height: 48px; padding: 0.7rem 0.8rem; border: 1px solid #d7e1de; border-radius: 11px; background: #fbfcfb; color: var(--ink); font: inherit; font-size: 0.9rem; }
+        select:focus, input:focus { outline: 3px solid rgba(8, 126, 131, 0.16); border-color: var(--ocean); }
+        button.btn-search { border: 0;         background: #1d4ed8; color: white; cursor: pointer; font-weight: 800; transition: background 160ms ease, transform 160ms ease; }
+                button.btn-search:hover { transform: translateY(-2px); background: #1e3a8a; }
+        .alert { margin-bottom: 1rem; padding: 0.85rem 1rem; border-radius: 12px; }
+        .error { background: #fff0ed; color: #9c392c; }
+        .info { background: #eaf5f3; color: #17666a; }
+        .welcome-banner { margin: 0 0 1rem; color: var(--muted); font-size: 0.95rem; }
+        .results-heading { margin-bottom: 0.5rem; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; min-width: 820px; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+        th, td { padding: 0.9rem 0.75rem; border-bottom: 1px solid #e8eeeb; text-align: left; }
+        th { color: var(--muted); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        td { color: #314957; }
+        tbody tr:hover { background: #f7faf8; }
+        @media (max-width: 760px) {
+            .container { width: min(100% - 24px, 600px); }
+            .site-header { align-items: flex-start; flex-direction: column; }
+            .nav { justify-content: flex-start; }
+            .hero { min-height: 340px; padding: 2rem; border-radius: 22px; background-position: 58% center; }
+            .search-card { margin: -2rem 0.65rem 1.25rem; }
+            .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .form-grid > div, .form-grid > div:nth-child(n) { grid-column: span 1; }
+            .form-grid > div:first-child, .form-grid > div:nth-child(2), .form-grid > div:last-child { grid-column: 1 / -1; }
+            .section-heading { align-items: flex-start; flex-direction: column; }
+        }
+        @media (max-width: 420px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .form-grid > div, .form-grid > div:nth-child(n) { grid-column: 1 / -1; }
+            .nav { gap: 0.45rem; }
+            .nav .btn, .btn-logout { padding: 0.6rem 0.8rem; font-size: 0.82rem; }
+        }
     </style>
+<link rel="stylesheet" th:href="@{/css/tema.css}" />
 </head>
-<body>
+<body class="bg-home">
 <div class="container">
     <!-- Barra de navegación con control de roles (US-03 / US-04) -->
-    <div class="nav">
+    <header class="site-header">
+    <a class="brand" th:href="@{/}"><span class="brand-mark" aria-hidden="true">↗</span> rumbo</a>
+    <nav class="nav" aria-label="Navegación principal">
         <a class="btn secondary" sec:authorize="isAnonymous()" th:href="@{/registro}">Registrarme</a>
         <a class="btn" sec:authorize="isAnonymous()" th:href="@{/login}">Iniciar sesión</a>
         <a class="btn" sec:authorize="isAuthenticated()" th:href="@{/inicio}">Ir a mi inicio</a>
@@ -36,11 +84,23 @@
         <form sec:authorize="isAuthenticated()" method="post" th:action="@{/logout}" style="display: inline;">
             <button type="submit" class="btn-logout">Cerrar sesión</button>
         </form>
-    </div>
+    </nav>
+    </header>
+
+    <section class="hero" aria-label="Inspiración para viajar">
+        <div class="hero-copy">
+            <p class="eyebrow">Tu próxima historia empieza acá</p>
+            <h1>El mundo,<br />un vuelo a la vez.</h1>
+            <p>Busca tu próximo destino y déjate llevar por todo lo que todavía te queda por descubrir.</p>
+        </div>
+    </section>
 
     <!-- Buscador de Vuelos (US-08) -->
-    <div class="card">
-        <h1>Buscar Vuelos</h1>
+    <div class="card search-card">
+        <div class="section-heading">
+            <h2>¿A dónde vamos?</h2>
+            <p>Encuentra el vuelo ideal para tu próximo viaje</p>
+        </div>
         <p class="welcome-banner" th:if="${message}" th:text="${message}"></p>
 
         <div th:if="${error}" class="alert error" th:text="${error}"></div>
@@ -91,13 +151,16 @@
 
     <!-- Resultados de la búsqueda -->
     <div class="card" th:if="${busquedaRealizada}">
-        <h2>Opciones de Vuelo Disponibles</h2>
+        <div class="section-heading results-heading">
+            <h2>Opciones de vuelo</h2>
+        </div>
 
         <div th:if="${#lists.isEmpty(resultados)}" class="alert info">
             No se encontraron vuelos programados para la ruta y fechas seleccionadas.
         </div>
 
-        <table th:if="${!#lists.isEmpty(resultados)}">
+        <div class="table-wrap" th:if="${!#lists.isEmpty(resultados)}">
+        <table>
             <thead>
             <tr>
                 <th>Vuelo</th>
@@ -125,6 +188,7 @@
             </tr>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 </body>

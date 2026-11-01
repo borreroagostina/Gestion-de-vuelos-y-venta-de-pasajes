@@ -20,8 +20,9 @@
         .alert { padding: 0.8rem 1rem; border-radius: 6px; margin-bottom: 1rem; background: #ffebee; color: #b71c1c; }
         .field-error { color: #b71c1c; font-size: 0.85rem; margin-top: 0.25rem; display: block; }
     </style>
+<link rel="stylesheet" th:href="@{/css/tema.css}" />
 </head>
-<body>
+<body class="bg-admin-vuelos">
 <div class="container">
     <div class="card">
         <h1 th:text="${esEdicion} ? 'Modificar Vuelo' : 'Alta de Nuevo Vuelo'"></h1>

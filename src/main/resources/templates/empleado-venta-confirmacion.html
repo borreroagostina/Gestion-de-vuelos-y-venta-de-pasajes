@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Venta de mostrador - Confirmada</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f5ef; }
+    .container { max-width: 700px; margin: 0 auto; }
+    .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .btn { display: inline-block; padding: 0.7rem 1rem; background: #198754; color: white; text-decoration: none; border-radius: 8px; }
+    .btn.secondary { background: #6c757d; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>Venta registrada</h1>
+    <p><strong>Orden:</strong> <span th:text="${venta.orderCode}">código</span></p>
+    <p><strong>Total cobrado:</strong> <span th:text="|${venta.currency} ${venta.amount}|">USD 100.00</span>
+       (<span th:text="${venta.paymentMethod.etiqueta}">Efectivo</span>)</p>
+    <p>Los pasajes y la factura se enviarán por email a
+       <strong th:text="${venta.customerEmail}">cliente@mail.com</strong>.</p>
+    <a class="btn" th:href="@{/empleado/venta}">Nueva venta</a>
+    <a class="btn secondary" th:href="@{/empleado}">Panel del empleado</a>
+  </div>
+</div>
+</body>
+</html>

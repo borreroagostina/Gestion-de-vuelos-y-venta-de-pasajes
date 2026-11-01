@@ -4,6 +4,7 @@ import com.aerolinea.gestionvuelos.dto.PasajeroViajeForm;
 import com.aerolinea.gestionvuelos.model.Asiento;
 import com.aerolinea.gestionvuelos.model.EmailOutboxStatus;
 import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
+import com.aerolinea.gestionvuelos.model.MetodoPagoMostrador;
 import com.aerolinea.gestionvuelos.model.PaymentOrder;
 import com.aerolinea.gestionvuelos.model.PaymentOrderStatus;
 import com.aerolinea.gestionvuelos.model.PurchaseEmailOutbox;
@@ -164,6 +165,28 @@ public class PaymentOrderService {
                 })
             .toList();
     return createOrder(userId, reservationId, passengers, currency);
+  }
+
+  @Transactional
+  public void confirmCounterSale(String orderCode, Usuario employee, MetodoPagoMostrador method) {
+    final PaymentOrder order = getLockedOrder(orderCode);
+    if (order.getStatus() != PaymentOrderStatus.PENDING) {
+      throw new IllegalStateException("La orden ya no admite confirmar el cobro.");
+    }
+    final ReservaTemporal reservation =
+        reservationRepository
+            .findByIdWithLock(order.getReservaTemporal().getId())
+            .orElseThrow(() -> new IllegalStateException("La reserva temporal ya no existe."));
+    if (!reservation.getFechaExpiracion().isAfter(LocalDateTime.now())) {
+      throw new IllegalStateException(
+          "La reserva temporal expiró. Seleccioná los asientos otra vez.");
+    }
+    order.setEmpleado(employee);
+    order.setPaymentMethod(method);
+    finalizePurchase(order, reservation);
+    if (order.getStatus() != PaymentOrderStatus.APPROVED) {
+      throw new IllegalStateException("Uno o más asientos ya no están reservados.");
+    }
   }
 
   @Transactional

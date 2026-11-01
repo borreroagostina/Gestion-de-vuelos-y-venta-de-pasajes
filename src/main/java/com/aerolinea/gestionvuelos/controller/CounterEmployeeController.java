@@ -7,7 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
-@PreAuthorize("hasRole('EMPLEADO')")
+@PreAuthorize("hasAnyRole('EMPLEADO','ADMIN')")
 public class CounterEmployeeController {
 
   @GetMapping("/empleado")

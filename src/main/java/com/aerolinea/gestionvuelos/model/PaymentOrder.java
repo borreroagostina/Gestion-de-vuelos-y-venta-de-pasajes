@@ -32,6 +32,7 @@ public class PaymentOrder {
   private static final int STATUS_LENGTH = 30;
   private static final int EXTERNAL_TRANSACTION_ID_LENGTH = 100;
   private static final int CHECKOUT_URL_LENGTH = 1000;
+  private static final int PAYMENT_METHOD_LENGTH = 20;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,11 +74,35 @@ public class PaymentOrder {
   @Column(name = "checkout_url", length = CHECKOUT_URL_LENGTH)
   private String checkoutUrl;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "empleado_id")
+  private Usuario empleado;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "payment_method", length = PAYMENT_METHOD_LENGTH)
+  private MetodoPagoMostrador paymentMethod;
+
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
+
+  public Usuario getEmpleado() {
+    return empleado;
+  }
+
+  public void setEmpleado(Usuario empleado) {
+    this.empleado = empleado;
+  }
+
+  public MetodoPagoMostrador getPaymentMethod() {
+    return paymentMethod;
+  }
+
+  public void setPaymentMethod(MetodoPagoMostrador paymentMethod) {
+    this.paymentMethod = paymentMethod;
+  }
 
   public Long getId() {
     return id;

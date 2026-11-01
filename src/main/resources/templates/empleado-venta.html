@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Venta de mostrador - Buscar vuelo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f5ef; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .btn { display: inline-block; padding: 0.6rem 1rem; background: #198754; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
+    .btn.secondary { background: #6c757d; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end; }
+    .form-grid select, .form-grid input { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.6rem; border-bottom: 1px solid #e5e7eb; }
+    .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+    .error { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div style="margin-bottom: 1rem;">
+    <a class="btn secondary" th:href="@{/empleado}">← Panel del empleado</a>
+  </div>
+  <div th:if="${error}" class="alert error" th:text="${error}"></div>
+  <div th:if="${param.error}" class="alert error" th:text="${param.error}"></div>
+
+  <div class="card">
+    <h1>Venta de mostrador</h1>
+    <p>Buscá el vuelo del cliente, elegí los asientos y registrá el cobro presencial.</p>
+    <form method="get" th:action="@{/empleado/venta}">
+      <div class="form-grid">
+        <div>
+          <label for="origenId">Origen</label>
+          <select name="origenId" id="origenId" required>
+            <option value="">Seleccione origen...</option>
+            <option th:each="a : ${aeropuertos}" th:value="${a.id}"
+                    th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|"
+                    th:selected="${a.id == origenId}"></option>
+          </select>
+        </div>
+        <div>
+          <label for="destinoId">Destino</label>
+          <select name="destinoId" id="destinoId" required>
+            <option value="">Seleccione destino...</option>
+            <option th:each="a : ${aeropuertos}" th:value="${a.id}"
+                    th:text="|${a.ciudad} (${a.codigoIata}) - ${a.nombre}|"
+                    th:selected="${a.id == destinoId}"></option>
+          </select>
+        </div>
+        <div>
+          <label for="fechaSalida">Fecha de salida</label>
+          <input type="date" id="fechaSalida" name="fechaSalida" th:value="${fechaSalida}" required />
+        </div>
+        <div><button type="submit" class="btn">Buscar vuelos</button></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" th:if="${resultados != null}">
+    <h2>Vuelos disponibles</h2>
+    <p th:if="${#lists.isEmpty(resultados)}">No se encontraron vuelos para la ruta y fecha elegidas.</p>
+    <table th:if="${!#lists.isEmpty(resultados)}">
+      <thead>
+        <tr><th>Vuelo</th><th>Horario</th><th>Economy</th><th>Primera</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr th:each="v : ${resultados}">
+          <td th:text="${v.vueloProgramado.codigoVuelo}">AR1450</td>
+          <td th:text="${v.getItinerarioFormateado()}">8:15am</td>
+          <td th:text="|USD ${v.precioEconomy} (disp.: ${v.asientosDispEconomy})|">USD 100</td>
+          <td th:text="|USD ${v.precioPrimera} (disp.: ${v.asientosDispPrimera})|">USD 200</td>
+          <td><a class="btn" th:href="@{/empleado/venta/vuelos/{id}(id=${v.id})}">Elegir asientos</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</body>
+</html>

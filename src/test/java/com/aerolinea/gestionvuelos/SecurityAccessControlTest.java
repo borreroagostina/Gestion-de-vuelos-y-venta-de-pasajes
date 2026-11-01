@@ -19,6 +19,7 @@ import com.aerolinea.gestionvuelos.controller.AdminCatalogController;
 import com.aerolinea.gestionvuelos.controller.AdminController;
 import com.aerolinea.gestionvuelos.controller.AdminOccupancyReportController;
 import com.aerolinea.gestionvuelos.controller.CounterEmployeeController;
+import com.aerolinea.gestionvuelos.controller.CounterSaleController;
 import com.aerolinea.gestionvuelos.controller.HomeController;
 import com.aerolinea.gestionvuelos.controller.LoginController;
 import com.aerolinea.gestionvuelos.controller.PassengerController;
@@ -26,8 +27,12 @@ import com.aerolinea.gestionvuelos.dto.OcupacionVueloDto;
 import com.aerolinea.gestionvuelos.model.RolUsuario;
 import com.aerolinea.gestionvuelos.model.Usuario;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
+import com.aerolinea.gestionvuelos.service.BookingService;
 import com.aerolinea.gestionvuelos.service.CatalogService;
 import com.aerolinea.gestionvuelos.service.CheckoutPaymentService;
+import com.aerolinea.gestionvuelos.service.CheckoutService;
+import com.aerolinea.gestionvuelos.service.CounterSaleService;
+import com.aerolinea.gestionvuelos.service.FarePolicyService;
 import com.aerolinea.gestionvuelos.service.FlightService;
 import com.aerolinea.gestionvuelos.service.MyTicketsService;
 import com.aerolinea.gestionvuelos.service.OcupacionReportService;
@@ -53,6 +58,7 @@ import org.springframework.test.web.servlet.MvcResult;
   LoginController.class,
   PassengerController.class,
   CounterEmployeeController.class,
+  CounterSaleController.class,
   AdminController.class,
   AdminCatalogController.class,
   AdminOccupancyReportController.class
@@ -79,6 +85,10 @@ class SecurityAccessControlTest {
   @MockitoBean private CheckoutPaymentService checkoutPaymentService;
 
   @MockitoBean private FlightService flightService;
+  @MockitoBean private BookingService bookingService;
+  @MockitoBean private CheckoutService checkoutService;
+  @MockitoBean private CounterSaleService counterSaleService;
+  @MockitoBean private FarePolicyService farePolicyService;
 
   @MockitoBean private MyTicketsService myTicketsService;
   @MockitoBean private OcupacionReportService ocupacionReportService;
@@ -230,6 +240,38 @@ class SecurityAccessControlTest {
         .perform(get("/login").param("expired", ""))
         .andExpect(status().isOk())
         .andExpect(content().string(containsString("La sesión expiró por inactividad.")));
+  }
+
+  @Test
+  @WithMockUser(roles = "PASAJERO")
+  void passengerCannotAccessCounterSale() throws Exception {
+    mockMvc.perform(get("/empleado/venta")).andExpect(status().isForbidden());
+    mockMvc
+        .perform(post("/empleado/venta/confirmar").with(csrf()))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void anonymousUserIsRedirectedToLoginFromCounterSale() throws Exception {
+    mockMvc
+        .perform(get("/empleado/venta"))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("http://localhost/login"));
+  }
+
+  @Test
+  @WithMockUser(roles = "EMPLEADO")
+  void employeeCanOpenCounterSale() throws Exception {
+    mockMvc
+        .perform(get("/empleado/venta"))
+        .andExpect(status().isOk())
+        .andExpect(content().string(containsString("Venta de mostrador")));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void adminCanOpenCounterSale() throws Exception {
+    mockMvc.perform(get("/empleado/venta")).andExpect(status().isOk());
   }
 
   private Usuario activeUser(String email, RolUsuario rolUsuario) {

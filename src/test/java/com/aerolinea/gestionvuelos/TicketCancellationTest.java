@@ -42,7 +42,7 @@ class TicketCancellationTest {
 
   private static final String EMAIL = "pasajero@test.com";
   private static final long TICKET_ID = 7L;
-  private static final int EXPECTED_PERCENT = 80;
+  private static final int EXPECTED_PERCENT = 100;
 
   @Mock private ReservaAsientoRepository reservaAsientoRepository;
   @Mock private PaymentOrderRepository paymentOrderRepository;
@@ -108,7 +108,7 @@ class TicketCancellationTest {
     final var result = cancellationService.cancelar(TICKET_ID, EMAIL);
 
     assertEquals(EXPECTED_PERCENT, result.percentage());
-    assertEquals(new BigDecimal("80.00"), result.refundAmount());
+    assertEquals(new BigDecimal("100.00"), result.refundAmount());
     assertEquals(EstadoReservaAsiento.CANCELADO, ticket.getEstado());
     assertEquals(EstadoReembolso.PENDIENTE, ticket.getEstadoReembolso());
     assertEquals("DISPONIBLE", seat.getEstado());

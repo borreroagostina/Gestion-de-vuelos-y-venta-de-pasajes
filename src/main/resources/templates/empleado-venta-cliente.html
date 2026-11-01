@@ -4,11 +4,10 @@
   <meta charset="UTF-8" />
   <title>Venta de mostrador - Cliente y pasajeros</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f5ef; }
+    body { margin: 2rem; }
     .container { max-width: 900px; margin: 0 auto; }
     .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .btn { display: inline-block; padding: 0.7rem 1rem; background: #198754; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
-    .btn.secondary { background: #6c757d; }
+    .btn { display: inline-block; padding: 0.7rem 1rem; color: white; text-decoration: none; border: none; cursor: pointer; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
     .field label { display: block; font-weight: bold; margin-bottom: 0.3rem; }
     .field input, .field select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
@@ -16,8 +15,9 @@
     .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
     .error { background: #fee2e2; color: #991b1b; }
   </style>
+  <link rel="stylesheet" th:href="@{/css/tema.css}" />
 </head>
-<body>
+<body class="bg-empleado">
 <div class="container">
   <div style="margin-bottom: 1rem;">
     <a class="btn secondary" th:href="@{/empleado/venta}">← Cambiar vuelo o asientos</a>

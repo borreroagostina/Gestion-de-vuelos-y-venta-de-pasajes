@@ -4,14 +4,14 @@
   <meta charset="UTF-8" />
   <title>Venta de mostrador - Confirmada</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f5ef; }
+    body { margin: 2rem; }
     .container { max-width: 700px; margin: 0 auto; }
     .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .btn { display: inline-block; padding: 0.7rem 1rem; background: #198754; color: white; text-decoration: none; border-radius: 8px; }
-    .btn.secondary { background: #6c757d; }
+    .btn { display: inline-block; padding: 0.7rem 1rem; color: white; text-decoration: none; }
   </style>
+  <link rel="stylesheet" th:href="@{/css/tema.css}" />
 </head>
-<body>
+<body class="bg-empleado">
 <div class="container">
   <div class="card">
     <h1>Venta registrada</h1>

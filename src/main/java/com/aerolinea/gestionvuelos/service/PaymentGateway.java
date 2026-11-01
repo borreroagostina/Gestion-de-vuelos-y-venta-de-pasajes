@@ -10,6 +10,8 @@ public interface PaymentGateway {
 
   boolean refund(String paymentIntentId);
 
+  boolean refund(String paymentIntentId, BigDecimal amount, String idempotencyKey);
+
   boolean expireCheckoutSession(String sessionId);
 
   boolean verifyWebhookSignature(String payload, String signatureHeader);

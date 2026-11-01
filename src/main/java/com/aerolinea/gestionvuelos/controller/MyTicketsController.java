@@ -1,6 +1,7 @@
 package com.aerolinea.gestionvuelos.controller;
 
 import com.aerolinea.gestionvuelos.service.MyTicketsService;
+import com.aerolinea.gestionvuelos.service.TicketRefundService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -10,7 +11,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/pasajero/mis-pasajes")
@@ -18,9 +21,39 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MyTicketsController {
 
   private final MyTicketsService myTicketsService;
+  private final TicketRefundService ticketRefundService;
 
-  public MyTicketsController(MyTicketsService myTicketsService) {
+  public MyTicketsController(
+      MyTicketsService myTicketsService, TicketRefundService ticketRefundService) {
     this.myTicketsService = myTicketsService;
+    this.ticketRefundService = ticketRefundService;
+  }
+
+  @PostMapping("/pasaje/{reservaAsientoId}/cancelar")
+  public String cancelarPasaje(
+      @PathVariable Long reservaAsientoId,
+      Authentication authentication,
+      RedirectAttributes redirectAttributes) {
+    try {
+      final TicketRefundService.CancellationOutcome outcome =
+          ticketRefundService.cancelarPasaje(reservaAsientoId, authentication.getName());
+      final String detalle =
+          "Pasaje cancelado. Reembolso: "
+              + outcome.refundAmount().toPlainString()
+              + " ("
+              + outcome.percentage()
+              + "% de la tarifa). ";
+      redirectAttributes.addFlashAttribute(
+          "mensaje",
+          detalle
+              + (outcome.refunded()
+                  ? "El reembolso fue acreditado y te enviamos un email de confirmación."
+                  : "El reembolso quedó pendiente y se reintentará automáticamente; "
+                      + "te avisaremos por email cuando se confirme."));
+    } catch (IllegalArgumentException | IllegalStateException exception) {
+      redirectAttributes.addFlashAttribute("error", exception.getMessage());
+    }
+    return "redirect:/pasajero/mis-pasajes";
   }
 
   @GetMapping

@@ -1,11 +1,18 @@
 package com.aerolinea.gestionvuelos.service;
 
 import com.aerolinea.gestionvuelos.dto.HistorialCompraDto;
+import com.aerolinea.gestionvuelos.model.EstadoReembolso;
+import com.aerolinea.gestionvuelos.model.EstadoReservaAsiento;
+import com.aerolinea.gestionvuelos.model.InstanciaVuelo;
 import com.aerolinea.gestionvuelos.model.PaymentOrder;
 import com.aerolinea.gestionvuelos.model.PaymentOrderStatus;
 import com.aerolinea.gestionvuelos.model.ReservaAsiento;
 import com.aerolinea.gestionvuelos.repository.PaymentOrderRepository;
 import com.aerolinea.gestionvuelos.repository.ReservaAsientoRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -44,15 +51,7 @@ public class MyTicketsService {
       final var vuelo = primerAsiento.getInstanciaVuelo();
 
       final List<HistorialCompraDto.PasajeItemDto> pasajesDto =
-          asientos.stream()
-              .map(
-                  a ->
-                      new HistorialCompraDto.PasajeItemDto(
-                          a.getId(),
-                          a.getAsiento().getNumero(),
-                          a.getNombrePasajero() + " " + a.getApellidoPasajero(),
-                          a.getDocumentoPasajero()))
-              .toList();
+          asientos.stream().map(a -> toPasajeDto(a, orden, asientos.size(), vuelo)).toList();
 
       historial.add(
           new HistorialCompraDto(
@@ -92,6 +91,10 @@ public class MyTicketsService {
             .orElseThrow(
                 () -> new IllegalArgumentException("No se encontró el pasaje solicitado."));
 
+    if (reserva.getEstado() == EstadoReservaAsiento.CANCELADO) {
+      throw new IllegalStateException("El pasaje fue cancelado y ya no puede descargarse.");
+    }
+
     // Verifica que la reserva pertenezca al usuario que la consulta
     if (!reserva.getReservaTemporal().getUsuario().getEmail().equalsIgnoreCase(emailUsuario)) {
       throw new IllegalArgumentException("No tiene permisos para descargar este pasaje.");
@@ -107,5 +110,40 @@ public class MyTicketsService {
                         "No se encontró la orden de pago asociada al pasaje."));
 
     return pdfGeneratorService.generarPasajePdf(order, reserva);
+  }
+
+  private HistorialCompraDto.PasajeItemDto toPasajeDto(
+      ReservaAsiento reserva, PaymentOrder orden, int cantidadPasajes, InstanciaVuelo vuelo) {
+    final boolean cancelado = reserva.getEstado() == EstadoReservaAsiento.CANCELADO;
+    final LocalDateTime salida = vuelo.getFechaSalida().atTime(vuelo.getHoraSalida());
+    final LocalDateTime ahora = LocalDateTime.now();
+    final boolean pagoOnline =
+        orden.getPaymentMethod() == null
+            && orden.getExternalTransactionId() != null
+            && !orden.getExternalTransactionId().isBlank();
+    final boolean puedeCancelar = !cancelado && pagoOnline && salida.isAfter(ahora);
+
+    int porcentaje = 0;
+    BigDecimal reembolso = reserva.getMontoReembolso();
+    if (puedeCancelar) {
+      porcentaje =
+          vuelo.isCancelada()
+              ? RefundPolicy.FULL_PERCENT
+              : RefundPolicy.percentage(
+                  reserva.getAsiento().getClase(), Duration.between(ahora, salida));
+      final BigDecimal precioPasaje =
+          orden.getAmount().divide(BigDecimal.valueOf(cantidadPasajes), 2, RoundingMode.HALF_UP);
+      reembolso = RefundPolicy.refundAmount(precioPasaje, porcentaje);
+    }
+    return new HistorialCompraDto.PasajeItemDto(
+        reserva.getId(),
+        reserva.getAsiento().getNumero(),
+        reserva.getNombrePasajero() + " " + reserva.getApellidoPasajero(),
+        reserva.getDocumentoPasajero(),
+        cancelado,
+        puedeCancelar,
+        porcentaje,
+        reembolso,
+        reserva.getEstadoReembolso() == EstadoReembolso.PENDIENTE);
   }
 }

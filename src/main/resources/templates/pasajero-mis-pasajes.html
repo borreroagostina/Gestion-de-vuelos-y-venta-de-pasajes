@@ -10,6 +10,10 @@
         .nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
         .btn { display: inline-block; padding: 0.6rem 1rem; background: #0d6efd; color: white; text-decoration: none; border-radius: 8px; border: none; font-size: 0.9rem; cursor: pointer; }
         .btn.secondary { background: #6c757d; }
+        .btn-danger { background: #dc3545; }
+        .badge-cancelled { background: #fee2e2; color: #b91c1c; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+        .alert.success { background: #dcfce7; color: #15803d; }
+        .alert.error { background: #fee2e2; color: #b91c1c; }
         .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
         .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
         .alert.info { background: #e0f2fe; color: #0369a1; }
@@ -69,6 +73,9 @@
         <p style="color: #4b5563;">Historial de compras confirmadas de pasajes e itinerarios.</p>
     </div>
 
+    <div th:if="${mensaje}" class="card alert success" th:text="${mensaje}"></div>
+    <div th:if="${error}" class="card alert error" th:text="${error}"></div>
+
     <div th:if="${#lists.isEmpty(compras)}" class="card alert info">
         Aún no tenés pasajes ni compras realizadas.
     </div>
@@ -103,10 +110,20 @@
                 <span th:text="|Asiento ${pasaje.numeroAsiento()}: ${pasaje.nombrePasajero()} (${pasaje.documentoPasajero()})|">
                     Asiento 01A: Juan Pérez (DNI 12345678)
                 </span>
+                <span th:if="${pasaje.cancelado()}" class="badge-cancelled"
+                      th:text="${pasaje.reembolsoPendiente()} ? |CANCELADO - reembolso pendiente ($ ${pasaje.montoReembolso()})| : |CANCELADO - reembolsado ($ ${pasaje.montoReembolso()})|">CANCELADO</span>
+                <span th:unless="${pasaje.cancelado()}" style="display: flex; gap: 0.5rem; align-items: center;">
                 <a th:href="@{/pasajero/mis-pasajes/pasaje/{id}/pdf(id=${pasaje.reservaAsientoId()})}"
                    class="btn btn-sm" target="_blank">
                     📄 Descargar Pasaje
                 </a>
+                <form th:if="${pasaje.puedeCancelar()}" method="post"
+                      th:action="@{/pasajero/mis-pasajes/pasaje/{id}/cancelar(id=${pasaje.reservaAsientoId()})}"
+                      th:attr="onsubmit=|return confirm('¿Cancelar este pasaje? Se reembolsará el ${pasaje.porcentajeReembolso()}% de la tarifa ($ ${pasaje.montoReembolso()}).');|"
+                      style="display: inline;">
+                    <button type="submit" class="btn btn-sm btn-danger">Cancelar pasaje</button>
+                </form>
+                </span>
             </li>
         </ul>
 

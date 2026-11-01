@@ -2,11 +2,13 @@ package com.aerolinea.gestionvuelos.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.math.BigDecimal;
 import java.util.Map;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,40 @@ public class TicketMailService {
       @Value("${app.email.from:no-reply@aerolinea.local}") String fromAddress) {
     this.mailSender = mailSenderProvider.getIfAvailable();
     this.fromAddress = fromAddress;
+  }
+
+  public void enviarConfirmacionCancelacion(
+      String emailDestino,
+      String codigoVuelo,
+      String asiento,
+      String pasajero,
+      BigDecimal montoReembolsado,
+      String moneda) {
+    if (mailSender == null) {
+      throw new IllegalStateException("El servicio de correo no está disponible.");
+    }
+    final SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(fromAddress);
+    message.setTo(emailDestino);
+    message.setSubject("Cancelación de pasaje - Vuelo " + codigoVuelo);
+    message.setText(
+        "Confirmamos la cancelación del pasaje del vuelo "
+            + codigoVuelo
+            + " (asiento "
+            + asiento
+            + ", pasajero "
+            + pasajero
+            + ").\nMonto reembolsado: "
+            + montoReembolsado.toPlainString()
+            + " "
+            + moneda
+            + ".\nEl dinero se acreditará según los plazos de tu medio de pago.");
+    try {
+      mailSender.send(message);
+    } catch (MailException exception) {
+      throw new IllegalStateException(
+          "No se pudo enviar la confirmación de cancelación.", exception);
+    }
   }
 
   public void enviarComprobantes(

@@ -17,5 +17,10 @@ public record HistorialCompraDto(
       Long reservaAsientoId,
       String numeroAsiento,
       String nombrePasajero,
-      String documentoPasajero) {}
+      String documentoPasajero,
+      boolean cancelado,
+      boolean puedeCancelar,
+      int porcentajeReembolso,
+      BigDecimal montoReembolso,
+      boolean reembolsoPendiente) {}
 }

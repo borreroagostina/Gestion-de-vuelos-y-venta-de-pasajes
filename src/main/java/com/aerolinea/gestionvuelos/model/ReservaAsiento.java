@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -21,6 +22,8 @@ public class ReservaAsiento {
   private static final int ESTADO_LENGTH = 30;
   private static final int MAX_PASSENGER_NAME_LENGTH = 100;
   private static final int MAX_PASSENGER_DOCUMENT_LENGTH = 20;
+  private static final int AMOUNT_PRECISION = 12;
+  private static final int REFUND_STATUS_LENGTH = 20;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,6 +62,16 @@ public class ReservaAsiento {
 
   @Column(name = "fecha_nacimiento_pasajero")
   private LocalDate fechaNacimientoPasajero;
+
+  @Column(name = "cancelado_en")
+  private LocalDateTime canceladoEn;
+
+  @Column(name = "monto_reembolso", precision = AMOUNT_PRECISION, scale = 2)
+  private BigDecimal montoReembolso;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "estado_reembolso", length = REFUND_STATUS_LENGTH)
+  private EstadoReembolso estadoReembolso;
 
   public Long getId() {
     return id;
@@ -146,6 +159,30 @@ public class ReservaAsiento {
 
   public void setFechaNacimientoPasajero(LocalDate fechaNacimientoPasajero) {
     this.fechaNacimientoPasajero = fechaNacimientoPasajero;
+  }
+
+  public LocalDateTime getCanceladoEn() {
+    return canceladoEn;
+  }
+
+  public void setCanceladoEn(LocalDateTime canceladoEn) {
+    this.canceladoEn = canceladoEn;
+  }
+
+  public BigDecimal getMontoReembolso() {
+    return montoReembolso;
+  }
+
+  public void setMontoReembolso(BigDecimal montoReembolso) {
+    this.montoReembolso = montoReembolso;
+  }
+
+  public EstadoReembolso getEstadoReembolso() {
+    return estadoReembolso;
+  }
+
+  public void setEstadoReembolso(EstadoReembolso estadoReembolso) {
+    this.estadoReembolso = estadoReembolso;
   }
 
   public boolean tieneDatosPasajeroCompletos() {

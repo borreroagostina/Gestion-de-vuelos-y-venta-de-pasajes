@@ -157,6 +157,27 @@ public class PaymentGatewayService implements PaymentGateway {
   }
 
   @Override
+  public boolean refund(String paymentIntentId, BigDecimal amount, String idempotencyKey) {
+    requireCredentials();
+    final MultiValueMap<String, String> request = new LinkedMultiValueMap<>();
+    request.add("payment_intent", paymentIntentId);
+    request.add("amount", amount.movePointRight(STRIPE_CURRENCY_SCALE).toBigInteger().toString());
+    final JsonNode response =
+        restClient
+            .post()
+            .uri("/v1/refunds")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + secretKey)
+            .header("Idempotency-Key", idempotencyKey)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(request)
+            .retrieve()
+            .body(JsonNode.class);
+    return response != null
+        && response.hasNonNull("status")
+        && "succeeded".equalsIgnoreCase(response.get("status").asText());
+  }
+
+  @Override
   public boolean expireCheckoutSession(String sessionId) {
     requireCredentials();
     final JsonNode response =

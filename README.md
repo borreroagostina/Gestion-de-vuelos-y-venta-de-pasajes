@@ -82,6 +82,8 @@ Luego de correr las migraciones (arranque normal de la app), quedan creadas esta
 
 El administrador puede consultar el reporte de ocupación desde **Reporte de ocupación** en su panel (`/admin/reportes/ocupacion`). El reporte permite filtrar por vuelo, clase y rango de fechas de salida; se descarga en formato CSV con el mismo conjunto de filtros.
 
+Los empleados de mostrador y administradores registran ventas presenciales desde **Registrar venta de mostrador** (`/empleado/venta`): buscan el vuelo, eligen asientos (tope de 9, sin asientos tomados dos veces), cargan cliente y pasajeros, y registran el cobro en efectivo o tarjeta POS sin pasar por Stripe. La orden guarda el empleado y el método de cobro, y los pasajes y la factura se envían al email del cliente mediante la misma cola de emails que la compra web.
+
 ### 5. Verificar la calidad del código
 
 ```bash

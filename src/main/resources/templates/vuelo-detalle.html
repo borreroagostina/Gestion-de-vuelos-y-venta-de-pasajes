@@ -44,7 +44,7 @@
 <body>
 <div class="container">
     <div style="margin-bottom: 1rem;">
-        <a class="btn secondary" href="/">← Volver a la Búsqueda</a>
+        <a class="btn secondary" th:href="${ventaMostrador != null} ? @{/empleado/venta} : @{/}">← Volver a la Búsqueda</a>
     </div>
 
     <div th:if="${error}" class="alert error" th:text="${error}"></div>
@@ -137,7 +137,7 @@
             <div class="legend-item"><div class="legend-box" style="background: #2d6cdf;"></div> Tu selección</div>
         </div>
 
-        <form th:action="@{/vuelos/{id}/reservar(id=${vuelo.id})}" method="post" id="reserveForm">
+        <form th:action="${ventaMostrador != null} ? @{/empleado/venta/vuelos/{id}/reservar(id=${vuelo.id})} : @{/vuelos/{id}/reservar(id=${vuelo.id})}" method="post" id="reserveForm">
             <div th:if="${dispPrimera > 0 and not #lists.isEmpty(asientosPrimera)}">
                 <h3 style="margin-top: 1.5rem; border-bottom: 2px solid #2d6cdf; padding-bottom: 5px; color: #1e40af;">Primera Clase</h3>
                 <div class="seat-map" style="grid-template-columns: repeat(4, 1fr); max-width: 400px; margin: 1rem auto;">
@@ -180,7 +180,7 @@
                 </div>
                 <button type="submit" class="btn" id="btnReservar" disabled 
                         style="padding: 0.8rem 2.5rem; font-size: 1.1rem; font-weight: bold; background: #16a34a; border: none; box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);" 
-                        sec:authorize="hasRole('PASAJERO')">
+                        th:if="${ventaMostrador != null or #authorization.expression('hasRole(''PASAJERO'')')}">
                     CONTINUAR CON LA RESERVA
                 </button>
             </div>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Venta de mostrador - Cliente y pasajeros</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f5ef; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .btn { display: inline-block; padding: 0.7rem 1rem; background: #198754; color: white; text-decoration: none; border-radius: 8px; border: none; cursor: pointer; }
+    .btn.secondary { background: #6c757d; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .field label { display: block; font-weight: bold; margin-bottom: 0.3rem; }
+    .field input, .field select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+    .field-error { color: #b91c1c; font-size: 0.85rem; }
+    .alert { padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; }
+    .error { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div style="margin-bottom: 1rem;">
+    <a class="btn secondary" th:href="@{/empleado/venta}">← Cambiar vuelo o asientos</a>
+  </div>
+  <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+  <div class="card">
+    <h1>Resumen de la venta</h1>
+    <p><strong>Vuelo:</strong> <span th:text="${reserva.codigoVuelo}">AR1450</span>
+       (<span th:text="${reserva.origen}">Origen</span> → <span th:text="${reserva.destino}">Destino</span>)</p>
+    <p><strong>Itinerario:</strong> <span th:text="${reserva.fechaHoraVuelo}"></span></p>
+    <p><strong>Clase:</strong> <span th:text="${reserva.clase}"></span> -
+       <strong>Asientos:</strong> <span th:text="${#strings.listJoin(reserva.asientos, ', ')}"></span></p>
+    <p>Subtotal USD <span th:text="${resumen.subtotal}"></span> + IVA 21% USD
+       <span th:text="${resumen.impuestos}"></span> =
+       <strong>Total USD <span th:text="${resumen.total}"></span></strong></p>
+    <p>La reserva se mantiene <strong th:text="${minutosRestantes}">10</strong> minutos más.</p>
+  </div>
+
+  <form th:action="@{/empleado/venta/confirmar}" th:object="${ventaForm}" method="post">
+    <div class="card">
+      <h2>Cliente</h2>
+      <p>Los pasajes y la factura se envían al email del cliente.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="clienteNombre">Nombre</label>
+          <input id="clienteNombre" type="text" th:field="*{clienteNombre}" maxlength="100" required />
+          <span class="field-error" th:if="${#fields.hasErrors('clienteNombre')}" th:errors="*{clienteNombre}"></span>
+        </div>
+        <div class="field">
+          <label for="clienteApellido">Apellido</label>
+          <input id="clienteApellido" type="text" th:field="*{clienteApellido}" maxlength="100" required />
+          <span class="field-error" th:if="${#fields.hasErrors('clienteApellido')}" th:errors="*{clienteApellido}"></span>
+        </div>
+        <div class="field">
+          <label for="clienteDocumento">Documento</label>
+          <input id="clienteDocumento" type="text" th:field="*{clienteDocumento}" maxlength="30" required />
+          <span class="field-error" th:if="${#fields.hasErrors('clienteDocumento')}" th:errors="*{clienteDocumento}"></span>
+        </div>
+        <div class="field">
+          <label for="clienteEmail">Email</label>
+          <input id="clienteEmail" type="email" th:field="*{clienteEmail}" maxlength="150" required />
+          <span class="field-error" th:if="${#fields.hasErrors('clienteEmail')}" th:errors="*{clienteEmail}"></span>
+        </div>
+        <div class="field">
+          <label for="clienteTelefono">Teléfono</label>
+          <input id="clienteTelefono" type="text" th:field="*{clienteTelefono}" maxlength="30" required />
+          <span class="field-error" th:if="${#fields.hasErrors('clienteTelefono')}" th:errors="*{clienteTelefono}"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" th:each="pasajero, iter : *{pasajeros}">
+      <h2 th:text="|Pasajero ${iter.count} - Asiento ${reserva.asientos[iter.index]}|">Pasajero 1</h2>
+      <div class="grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" th:field="*{pasajeros[__${iter.index}__].nombre}" maxlength="100" required />
+          <span class="field-error" th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].nombre')}"
+                th:errors="*{pasajeros[__${iter.index}__].nombre}"></span>
+        </div>
+        <div class="field">
+          <label>Apellido</label>
+          <input type="text" th:field="*{pasajeros[__${iter.index}__].apellido}" maxlength="100" required />
+          <span class="field-error" th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].apellido')}"
+                th:errors="*{pasajeros[__${iter.index}__].apellido}"></span>
+        </div>
+        <div class="field">
+          <label>Tipo de documento</label>
+          <select th:field="*{pasajeros[__${iter.index}__].tipoDocumento}" required>
+            <option value="">Seleccione...</option>
+            <option value="DNI">DNI</option>
+            <option value="PASAPORTE">Pasaporte</option>
+          </select>
+          <span class="field-error" th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].tipoDocumento')}"
+                th:errors="*{pasajeros[__${iter.index}__].tipoDocumento}"></span>
+        </div>
+        <div class="field">
+          <label>DNI/Pasaporte</label>
+          <input type="text" th:field="*{pasajeros[__${iter.index}__].numeroDocumento}" maxlength="20" required />
+          <span class="field-error" th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].numeroDocumento')}"
+                th:errors="*{pasajeros[__${iter.index}__].numeroDocumento}"></span>
+        </div>
+        <div class="field">
+          <label>Fecha de nacimiento</label>
+          <input type="date" th:field="*{pasajeros[__${iter.index}__].fechaNacimiento}" required />
+          <span class="field-error" th:if="${#fields.hasErrors('pasajeros[' + iter.index + '].fechaNacimiento')}"
+                th:errors="*{pasajeros[__${iter.index}__].fechaNacimiento}"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Cobro presencial</h2>
+      <div class="field">
+        <label for="metodoPago">Método de pago</label>
+        <select id="metodoPago" th:field="*{metodoPago}" required>
+          <option value="">Seleccione...</option>
+          <option th:each="m : ${metodosPago}" th:value="${m.name()}" th:text="${m.etiqueta}"></option>
+        </select>
+        <span class="field-error" th:if="${#fields.hasErrors('metodoPago')}" th:errors="*{metodoPago}"></span>
+      </div>
+      <p>Confirmá solo después de haber cobrado el total al cliente.</p>
+      <button type="submit" class="btn">Registrar cobro y emitir pasajes</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>

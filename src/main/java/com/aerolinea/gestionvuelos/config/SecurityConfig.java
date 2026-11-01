@@ -43,7 +43,7 @@ public class SecurityConfig {
                     .requestMatchers("/pasajero/**")
                     .hasRole("PASAJERO")
                     .requestMatchers("/empleado/**")
-                    .hasRole("EMPLEADO")
+                    .hasAnyRole("EMPLEADO", "ADMIN")
                     .requestMatchers("/admin/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/pagos/**")

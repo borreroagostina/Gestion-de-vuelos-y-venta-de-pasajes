@@ -100,7 +100,11 @@ public class PdfGeneratorService {
       document.add(new Paragraph("AEROLÍNEA NACIONAL - FACTURA COMERCIAL", title));
       document.add(new Paragraph("Factura / reserva: " + order.getOrderCode(), body));
       document.add(new Paragraph("Cliente: " + order.getUsuario().getEmail(), body));
-      document.add(new Paragraph("Transacción: " + order.getExternalTransactionId(), body));
+      final String paymentDetail =
+          order.getPaymentMethod() != null
+              ? "Cobro en mostrador: " + order.getPaymentMethod().getEtiqueta()
+              : "Transacción: " + order.getExternalTransactionId();
+      document.add(new Paragraph(paymentDetail, body));
       document.add(new Paragraph("Vuelo: " + scheduledFlight.getCodigoVuelo(), body));
       document.add(
           new Paragraph(

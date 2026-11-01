@@ -13,6 +13,7 @@ import com.aerolinea.gestionvuelos.controller.MyTicketsController;
 import com.aerolinea.gestionvuelos.dto.HistorialCompraDto;
 import com.aerolinea.gestionvuelos.repository.UsuarioRepository;
 import com.aerolinea.gestionvuelos.service.MyTicketsService;
+import com.aerolinea.gestionvuelos.service.TicketRefundService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,11 +29,16 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import(SecurityConfig.class)
 class MyTicketsControllerTest {
 
+  private static final byte[] INVOICE_PDF_BYTES = {1, 2, 3};
+  private static final byte[] TICKET_PDF_BYTES = {4, 5, 6};
+
   @Autowired private MockMvc mockMvc;
 
   @MockitoBean private UsuarioRepository usuarioRepository;
 
   @MockitoBean private MyTicketsService myTicketsService;
+
+  @MockitoBean private TicketRefundService ticketRefundService;
 
   @Test
   @WithMockUser(username = "pasajero@test.com", roles = "PASAJERO")
@@ -59,7 +65,9 @@ class MyTicketsControllerTest {
             "Buenos Aires",
             "Mendoza",
             LocalDateTime.of(2026, 11, 1, 10, 0),
-            List.of(new HistorialCompraDto.PasajeItemDto(100L, "07A", "Ana Pérez", "12345678")),
+            List.of(
+                new HistorialCompraDto.PasajeItemDto(
+                    100L, "07A", "Ana Pérez", "12345678", false, false, 0, BigDecimal.ZERO, false)),
             new BigDecimal("1210.00"),
             LocalDateTime.of(2026, 10, 20, 12, 30));
     when(myTicketsService.obtenerHistorialCompras("pasajero@test.com"))
@@ -84,7 +92,7 @@ class MyTicketsControllerTest {
   @WithMockUser(username = "pasajero@test.com", roles = "PASAJERO")
   void shouldDownloadOwnedInvoiceAsPdf() throws Exception {
     when(myTicketsService.obtenerFacturaPdf("ORD-123", "pasajero@test.com"))
-        .thenReturn(new byte[] {1, 2, 3});
+        .thenReturn(INVOICE_PDF_BYTES);
 
     mockMvc
         .perform(get("/pasajero/mis-pasajes/orden/ORD-123/factura"))
@@ -92,21 +100,20 @@ class MyTicketsControllerTest {
         .andExpect(header().string("Content-Type", "application/pdf"))
         .andExpect(
             header().string("Content-Disposition", "attachment; filename=Factura_ORD-123.pdf"))
-        .andExpect(content().bytes(new byte[] {1, 2, 3}));
+        .andExpect(content().bytes(INVOICE_PDF_BYTES));
   }
 
   @Test
   @WithMockUser(username = "pasajero@test.com", roles = "PASAJERO")
   void shouldDownloadTicketAsPdf() throws Exception {
-    when(myTicketsService.obtenerPasajePdf(100L, "pasajero@test.com"))
-        .thenReturn(new byte[] {4, 5, 6});
+    when(myTicketsService.obtenerPasajePdf(100L, "pasajero@test.com")).thenReturn(TICKET_PDF_BYTES);
 
     mockMvc
         .perform(get("/pasajero/mis-pasajes/pasaje/100/pdf"))
         .andExpect(status().isOk())
         .andExpect(header().string("Content-Type", "application/pdf"))
         .andExpect(header().string("Content-Disposition", "attachment; filename=Pasaje_100.pdf"))
-        .andExpect(content().bytes(new byte[] {4, 5, 6}));
+        .andExpect(content().bytes(TICKET_PDF_BYTES));
   }
 
   @Test

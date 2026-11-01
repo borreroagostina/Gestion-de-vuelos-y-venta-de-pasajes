@@ -97,7 +97,8 @@ public class TicketCancellationService {
             item -> {
               final PaymentOrder order =
                   paymentOrderRepository
-                      .findByReservaTemporalId(item.getReservaTemporal().getId())
+                      .findFirstByReservaTemporalIdAndStatusOrderByIdDesc(
+                          item.getReservaTemporal().getId(), PaymentOrderStatus.APPROVED)
                       .orElseThrow(
                           () -> new IllegalStateException("No se encontró la orden de pago."));
               final InstanciaVuelo flight = item.getAsiento().getInstanciaVuelo();

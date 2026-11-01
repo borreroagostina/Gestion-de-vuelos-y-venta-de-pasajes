@@ -20,6 +20,9 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long
 
   Optional<PaymentOrder> findByReservaTemporalId(Long reservaTemporalId);
 
+  Optional<PaymentOrder> findFirstByReservaTemporalIdAndStatusOrderByIdDesc(
+      Long reservaTemporalId, PaymentOrderStatus status);
+
   List<PaymentOrder> findByStatus(PaymentOrderStatus status);
 
   List<PaymentOrder> findByStatusAndReservaTemporalFechaExpiracionBefore(

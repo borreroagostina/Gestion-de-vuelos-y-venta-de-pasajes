@@ -17,16 +17,26 @@ public class PaymentNotificationService {
   private static final Logger LOGGER = LoggerFactory.getLogger(PaymentNotificationService.class);
   private final PaymentGateway gatewayService;
   private final PaymentOrderService orderService;
+  private final TicketRefundService ticketRefundService;
 
   public PaymentNotificationService(
-      PaymentGateway gatewayService, PaymentOrderService orderService) {
+      PaymentGateway gatewayService,
+      PaymentOrderService orderService,
+      TicketRefundService ticketRefundService) {
     this.gatewayService = gatewayService;
     this.orderService = orderService;
+    this.ticketRefundService = ticketRefundService;
   }
 
   public void processWebhook(String payload, String signature) {
     if (!gatewayService.verifyWebhookSignature(payload, signature)) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Firma de Stripe inválida.");
+    }
+    final PaymentGateway.ConfirmedRefund confirmedRefund =
+        gatewayService.getConfirmedRefund(payload);
+    if (confirmedRefund != null) {
+      ticketRefundService.confirmarReembolsoExterno(confirmedRefund);
+      return;
     }
     final String sessionId = gatewayService.getCheckoutSessionId(payload);
     if (sessionId != null) {

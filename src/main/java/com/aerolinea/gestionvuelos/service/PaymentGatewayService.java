@@ -178,6 +178,34 @@ public class PaymentGatewayService implements PaymentGateway {
   }
 
   @Override
+  public List<BigDecimal> getSucceededRefundAmounts(String paymentIntentId) {
+    requireCredentials();
+    final JsonNode response =
+        restClient
+            .get()
+            .uri(
+                uriBuilder ->
+                    uriBuilder
+                        .path("/v1/refunds")
+                        .queryParam("payment_intent", paymentIntentId)
+                        .queryParam("limit", "100")
+                        .build())
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + secretKey)
+            .retrieve()
+            .body(JsonNode.class);
+    final List<BigDecimal> amounts = new java.util.ArrayList<>();
+    if (response != null) {
+      for (JsonNode refund : response.path("data")) {
+        if ("succeeded".equalsIgnoreCase(refund.path("status").asText())
+            && refund.hasNonNull("amount")) {
+          amounts.add(BigDecimal.valueOf(refund.get("amount").asLong(), STRIPE_CURRENCY_SCALE));
+        }
+      }
+    }
+    return amounts;
+  }
+
+  @Override
   public boolean expireCheckoutSession(String sessionId) {
     requireCredentials();
     final JsonNode response =
@@ -236,6 +264,27 @@ public class PaymentGatewayService implements PaymentGateway {
     }
     final JsonNode session = event.path("data").path("object");
     return session.path("id").asText(null);
+  }
+
+  @Override
+  public ConfirmedRefund getConfirmedRefund(String payload) {
+    final JsonNode event = parseWebhook(payload);
+    final String eventType = event.path("type").asText();
+    if (!List.of("refund.created", "refund.updated").contains(eventType)) {
+      return null;
+    }
+
+    final JsonNode refund = event.path("data").path("object");
+    if (!"succeeded".equalsIgnoreCase(refund.path("status").asText())
+        || !refund.hasNonNull("payment_intent")
+        || !refund.hasNonNull("amount")
+        || !refund.hasNonNull("currency")) {
+      return null;
+    }
+    return new ConfirmedRefund(
+        refund.path("payment_intent").asText(),
+        BigDecimal.valueOf(refund.path("amount").asLong(), 2),
+        refund.path("currency").asText().toUpperCase());
   }
 
   private String successUrl(String orderCode) {

@@ -54,6 +54,81 @@
             display: flex;
             justify-content: flex-end;
         }
+        .cancel-dialog {
+            width: min(28rem, calc(100% - 2rem));
+            padding: 1.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 22px;
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.97);
+            box-shadow: 0 24px 70px rgba(10, 33, 80, 0.3);
+        }
+        .cancel-dialog::backdrop {
+            background: rgba(10, 33, 80, 0.58);
+            backdrop-filter: blur(4px);
+        }
+        .cancel-dialog-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .cancel-dialog-icon {
+            display: grid;
+            flex: 0 0 2.75rem;
+            height: 2.75rem;
+            place-items: center;
+            border-radius: 50%;
+            color: #b42318;
+            background: #fee4e2;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .cancel-dialog h2 {
+            margin: 0.1rem 0 0.4rem;
+            font-size: 1.45rem;
+        }
+        .cancel-dialog-description {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+        .cancel-refund {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 1.4rem 0 0.8rem;
+            padding: 1rem;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            background: #f3f8ff;
+        }
+        .cancel-refund span { color: var(--muted); }
+        .cancel-refund strong { color: var(--blue-dark); text-align: right; }
+        .cancel-dialog-note {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+        .cancel-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        .cancel-dialog .btn-danger {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            box-shadow: 0 6px 16px rgba(185, 28, 28, 0.22);
+        }
+        .cancel-dialog .btn-danger:hover {
+            box-shadow: 0 10px 22px rgba(185, 28, 28, 0.3);
+        }
+        @media (max-width: 480px) {
+            .cancel-dialog { padding: 1.25rem; }
+            .cancel-dialog-actions { flex-direction: column-reverse; }
+            .cancel-dialog-actions .btn { width: 100%; }
+        }
     </style>
 <link rel="stylesheet" th:href="@{/css/tema.css}" />
 </head>
@@ -117,9 +192,9 @@
                    class="btn btn-sm" target="_blank">
                     📄 Descargar Pasaje
                 </a>
-                <form th:if="${pasaje.puedeCancelar()}" method="post"
+                <form th:if="${pasaje.puedeCancelar()}" method="post" class="cancel-ticket-form"
                       th:action="@{/pasajero/mis-pasajes/pasaje/{id}/cancelar(id=${pasaje.reservaAsientoId()})}"
-                      th:attr="onsubmit=|return confirm('¿Cancelar este pasaje? Se reembolsará el ${pasaje.porcentajeReembolso()}% de la tarifa ($ ${pasaje.montoReembolso()}).');|"
+                      th:attr="data-refund-percent=${pasaje.porcentajeReembolso()},data-refund-amount=${pasaje.montoReembolso()}"
                       style="display: inline;">
                     <button type="submit" class="btn btn-sm btn-danger">Cancelar pasaje</button>
                 </form>
@@ -135,5 +210,53 @@
         </div>
     </div>
 </div>
+<dialog class="cancel-dialog" id="cancel-ticket-dialog" aria-labelledby="cancel-dialog-title"
+        aria-describedby="cancel-dialog-description">
+    <div class="cancel-dialog-header">
+        <span class="cancel-dialog-icon" aria-hidden="true">!</span>
+        <div>
+            <h2 id="cancel-dialog-title">¿Cancelar este pasaje?</h2>
+            <p class="cancel-dialog-description" id="cancel-dialog-description">
+                Esta acción no se puede deshacer. Revisá el importe del reembolso antes de confirmar.
+            </p>
+        </div>
+    </div>
+    <div class="cancel-refund">
+        <span>Reembolso estimado</span>
+        <strong id="cancel-refund-detail"></strong>
+    </div>
+    <p class="cancel-dialog-note">El reembolso se procesará según las condiciones de la tarifa y te enviaremos una confirmación por email.</p>
+    <div class="cancel-dialog-actions">
+        <button type="button" class="btn secondary" id="keep-ticket" autofocus>Conservar pasaje</button>
+        <button type="button" class="btn btn-danger" id="confirm-cancel-ticket">Confirmar cancelación</button>
+    </div>
+</dialog>
+<script>
+    const cancelDialog = document.getElementById("cancel-ticket-dialog");
+    const refundDetail = document.getElementById("cancel-refund-detail");
+    const keepTicketButton = document.getElementById("keep-ticket");
+    const confirmCancelButton = document.getElementById("confirm-cancel-ticket");
+    let formToCancel;
+
+    document.querySelectorAll(".cancel-ticket-form").forEach((form) => {
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            formToCancel = form;
+            refundDetail.textContent =
+                `$ ${form.dataset.refundAmount} (${form.dataset.refundPercent}% de la tarifa)`;
+            cancelDialog.showModal();
+        });
+    });
+
+    keepTicketButton.addEventListener("click", () => cancelDialog.close());
+    confirmCancelButton.addEventListener("click", () => {
+        if (formToCancel) {
+            formToCancel.submit();
+        }
+    });
+    cancelDialog.addEventListener("close", () => {
+        formToCancel = undefined;
+    });
+</script>
 </body>
 </html>

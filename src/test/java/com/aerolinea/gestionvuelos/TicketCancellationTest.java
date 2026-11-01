@@ -84,10 +84,13 @@ class TicketCancellationTest {
     ticket.setReservaTemporal(reservation);
     ticket.setAsiento(seat);
     ticket.setEstado(EstadoReservaAsiento.VENDIDO);
+    ticket.setNombrePasajero("Ana");
+    ticket.setApellidoPasajero("Pérez");
 
     order = new PaymentOrder();
     order.setAmount(new BigDecimal("200.00"));
     order.setExternalTransactionId("pi_123");
+    order.setCurrency("USD");
   }
 
   private void stubTicketAndOrder() {
@@ -141,7 +144,9 @@ class TicketCancellationTest {
   void gatewayFailureKeepsRefundPendingWithoutEmail() {
     stubTicketAndOrder();
     when(reservaAsientoRepository.findById(TICKET_ID)).thenReturn(Optional.of(ticket));
-    when(paymentOrderRepository.findByReservaTemporalId(5L)).thenReturn(Optional.of(order));
+    when(paymentOrderRepository.findFirstByReservaTemporalIdAndStatusOrderByIdDesc(
+            5L, PaymentOrderStatus.APPROVED))
+        .thenReturn(Optional.of(order));
     order.setUsuario(ticket.getReservaTemporal().getUsuario());
     order.setCurrency("USD");
     seat.getInstanciaVuelo()
@@ -157,5 +162,55 @@ class TicketCancellationTest {
         .enviarConfirmacionCancelacion(any(), any(), any(), any(), any(), any());
     assertTrue(outcome.refundAmount().signum() > 0);
     assertTrue(LocalDateTime.now().isAfter(ticket.getCanceladoEn().minusSeconds(1)));
+  }
+
+  @Test
+  void retryDetectsRefundAlreadySucceededInStripeAndSendsEmail() {
+    stubTicketAndOrder();
+    when(reservaAsientoRepository.findById(TICKET_ID)).thenReturn(Optional.of(ticket));
+    when(reservaAsientoRepository.findByEstadoReembolso(EstadoReembolso.PENDIENTE))
+        .thenReturn(List.of(ticket));
+    when(paymentOrderRepository.findFirstByReservaTemporalIdAndStatusOrderByIdDesc(
+            5L, PaymentOrderStatus.APPROVED))
+        .thenReturn(Optional.of(order));
+    order.setUsuario(ticket.getReservaTemporal().getUsuario());
+    seat.getInstanciaVuelo()
+        .setVueloProgramado(new com.aerolinea.gestionvuelos.model.VueloProgramado());
+    seat.getInstanciaVuelo().getVueloProgramado().setCodigoVuelo("AR1");
+    cancellationService.cancelar(TICKET_ID, EMAIL);
+    when(gateway.getSucceededRefundAmounts("pi_123")).thenReturn(List.of(new BigDecimal("80.00")));
+
+    refundService.reintentarReembolsosPendientes();
+
+    assertEquals(EstadoReembolso.COMPLETADO, ticket.getEstadoReembolso());
+    verify(gateway, never()).refund(anyString(), any(), anyString());
+    verify(mailService)
+        .enviarConfirmacionCancelacion(
+            EMAIL, "AR1", "1A", "Ana Pérez", new BigDecimal("80.00"), "USD");
+  }
+
+  @Test
+  void stripeWebhookConfirmsMatchingPendingRefundAndSendsEmail() {
+    stubTicketAndOrder();
+    when(reservaAsientoRepository.findById(TICKET_ID)).thenReturn(Optional.of(ticket));
+    when(reservaAsientoRepository.findByEstadoReembolso(EstadoReembolso.PENDIENTE))
+        .thenReturn(List.of(ticket));
+    when(paymentOrderRepository.findFirstByReservaTemporalIdAndStatusOrderByIdDesc(
+            5L, PaymentOrderStatus.APPROVED))
+        .thenReturn(Optional.of(order));
+    order.setUsuario(ticket.getReservaTemporal().getUsuario());
+    order.setCurrency("USD");
+    seat.getInstanciaVuelo()
+        .setVueloProgramado(new com.aerolinea.gestionvuelos.model.VueloProgramado());
+    seat.getInstanciaVuelo().getVueloProgramado().setCodigoVuelo("AR1");
+    cancellationService.cancelar(TICKET_ID, EMAIL);
+
+    refundService.confirmarReembolsoExterno(
+        new PaymentGateway.ConfirmedRefund("pi_123", new BigDecimal("80.00"), "USD"));
+
+    assertEquals(EstadoReembolso.COMPLETADO, ticket.getEstadoReembolso());
+    verify(mailService)
+        .enviarConfirmacionCancelacion(
+            EMAIL, "AR1", "1A", "Ana Pérez", new BigDecimal("80.00"), "USD");
   }
 }

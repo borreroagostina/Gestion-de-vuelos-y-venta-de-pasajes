@@ -1,6 +1,8 @@
 package com.aerolinea.gestionvuelos.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -43,6 +45,30 @@ public class TicketRefundService {
     }
   }
 
+  public void confirmarReembolsoExterno(PaymentGateway.ConfirmedRefund refund) {
+    final List<TicketCancellationService.RefundRequest> matchingRequests = new ArrayList<>();
+    for (TicketCancellationService.RefundRequest request : pendingRequests()) {
+      if (request.paymentIntentId().equals(refund.paymentIntentId())
+          && request.amount().compareTo(refund.amount()) == 0
+          && request.currency().equalsIgnoreCase(refund.currency())) {
+        matchingRequests.add(request);
+      }
+    }
+    if (matchingRequests.size() != 1) {
+      LOGGER.warn(
+          "El reembolso confirmado de Stripe para el pago {} no se pudo asociar de forma "
+              + "inequívoca a un pasaje pendiente (coincidencias: {}).",
+          refund.paymentIntentId(),
+          matchingRequests.size());
+      return;
+    }
+
+    final TicketCancellationService.RefundRequest request = matchingRequests.get(0);
+    if (cancellationService.marcarReembolsado(request.ticketId())) {
+      notificar(request);
+    }
+  }
+
   private boolean procesarReembolso(Long ticketId) {
     try {
       final var pending = cancellationService.obtenerReembolsoPendiente(ticketId);
@@ -50,6 +76,12 @@ public class TicketRefundService {
         return false;
       }
       final TicketCancellationService.RefundRequest request = pending.get();
+      if (yaReembolsadoEnPasarela(request)) {
+        if (cancellationService.marcarReembolsado(ticketId)) {
+          notificar(request);
+        }
+        return true;
+      }
       final boolean succeeded =
           gateway.refund(
               request.paymentIntentId(), request.amount(), "refund-ticket-" + request.ticketId());
@@ -68,6 +100,40 @@ public class TicketRefundService {
           exception);
       return false;
     }
+  }
+
+  /**
+   * Detecta un reembolso exitoso ya hecho en Stripe (por ejemplo, manual) solo si es inequívoco: un
+   * único reembolso con ese importe y un único pasaje pendiente con ese pago e importe.
+   */
+  private boolean yaReembolsadoEnPasarela(TicketCancellationService.RefundRequest request) {
+    final long succeededWithAmount =
+        gateway.getSucceededRefundAmounts(request.paymentIntentId()).stream()
+            .filter(amount -> amount.compareTo(request.amount()) == 0)
+            .count();
+    if (succeededWithAmount != 1) {
+      return false;
+    }
+    final long pendingWithSameKey =
+        pendingRequests().stream()
+            .filter(
+                other ->
+                    other.paymentIntentId().equals(request.paymentIntentId())
+                        && other.amount().compareTo(request.amount()) == 0)
+            .count();
+    return pendingWithSameKey == 1;
+  }
+
+  private List<TicketCancellationService.RefundRequest> pendingRequests() {
+    final List<TicketCancellationService.RefundRequest> requests = new ArrayList<>();
+    for (Long id : cancellationService.idsReembolsosPendientes()) {
+      try {
+        cancellationService.obtenerReembolsoPendiente(id).ifPresent(requests::add);
+      } catch (RuntimeException exception) {
+        LOGGER.warn("Se omite el pasaje {} al conciliar reembolsos.", id, exception);
+      }
+    }
+    return requests;
   }
 
   private void notificar(TicketCancellationService.RefundRequest request) {

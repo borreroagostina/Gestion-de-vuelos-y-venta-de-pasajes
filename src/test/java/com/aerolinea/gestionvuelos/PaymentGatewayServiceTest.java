@@ -96,6 +96,26 @@ public class PaymentGatewayServiceTest {
   }
 
   @Test
+  public void extractsOnlySuccessfulTicketRefundEvents() {
+    final String succeededRefund =
+        "{\"type\":\"refund.updated\",\"data\":{\"object\":{"
+            + "\"status\":\"succeeded\",\"payment_intent\":\"pi_test_123\","
+            + "\"amount\":8000,\"currency\":\"usd\"}}}";
+    final String pendingRefund =
+        "{\"type\":\"refund.created\",\"data\":{\"object\":{"
+            + "\"status\":\"pending\",\"payment_intent\":\"pi_test_123\","
+            + "\"amount\":8000,\"currency\":\"usd\"}}}";
+
+    final PaymentGateway.ConfirmedRefund refund =
+        gatewayService.getConfirmedRefund(succeededRefund);
+
+    assertEquals("pi_test_123", refund.paymentIntentId());
+    assertEquals(0, new BigDecimal("80.00").compareTo(refund.amount()));
+    assertEquals("USD", refund.currency());
+    assertEquals(null, gatewayService.getConfirmedRefund(pendingRefund));
+  }
+
+  @Test
   public void fetchesAuthoritativeCheckoutSessionAndPaymentIntentStatus() {
     server
         .expect(
